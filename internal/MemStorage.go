@@ -17,6 +17,6 @@ func (ms *MemStorage) UpdateGauge(metricName string, value float64) {
 }
 
 func (ms *MemStorage) UpdateCounter(metricName string, value int64) {
-	currentValue, _ := ms.counterMetrics[metricName]
+	currentValue := ms.counterMetrics[metricName]
 	ms.counterMetrics[metricName] = currentValue + value
 }

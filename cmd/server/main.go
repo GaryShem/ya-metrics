@@ -1,80 +1,63 @@
 package main
 
 import (
-	"errors"
+	"fmt"
 	"github.com/GaryShem/ya-metrics.git/internal"
 	"net/http"
+	"slices"
 	"strconv"
-	"strings"
 )
 
 var metricStorage = internal.NewMemStorage()
 
-func validateMetricRequest(w http.ResponseWriter, r *http.Request) error {
+const (
+	Gauge   string = "gauge"
+	Counter string = "counter"
+)
+
+var supportedMetricTypes = []string{Gauge, Counter}
+
+func updateMetric(w http.ResponseWriter, r *http.Request) {
 	// make sure metrics are passed via POST
 	if r.Method != http.MethodPost {
 		http.Error(w, "only POST is accepted", http.StatusBadRequest)
-		return errors.New("only POST is accepted")
-	}
-
-	return nil
-}
-
-func tokenizeMetricParameters(w http.ResponseWriter, r *http.Request) ([]string, error) {
-	metricParameterString := r.URL.Path
-	metricParameterSlice := strings.Split(metricParameterString, "/")
-	if len(metricParameterSlice) != 2 {
-		http.Error(w, "invalid metric format, metric name and value expected", http.StatusNotFound)
-		return nil, errors.New("invalid metric format, metric name and value expected")
-	}
-	return metricParameterSlice, nil
-}
-
-func updateGauge(w http.ResponseWriter, r *http.Request) {
-	err := validateMetricRequest(w, r)
-	if err != nil {
 		return
 	}
-
-	metricParameterSlice, err := tokenizeMetricParameters(w, r)
-	if err != nil {
+	// get metric type and make sure it's an acceptable one (gauge, counter for iteration 1)
+	metricType := r.PathValue("metricType")
+	if !slices.Contains(supportedMetricTypes, metricType) {
+		http.Error(w, fmt.Sprintf("%v metric type is not supported", metricType), http.StatusBadRequest)
 		return
 	}
-
-	metricName := metricParameterSlice[0]
-	metricValue, err := strconv.ParseFloat(metricParameterSlice[1], 64)
-	if err != nil {
-		http.Error(w, "invalid metric value format, expected float64", http.StatusBadRequest)
+	// get metric name
+	metricName := r.PathValue("metricName")
+	if metricName == "" {
+		http.Error(w, fmt.Sprintf("%v metric name is empty", metricType), http.StatusNotFound)
+	}
+	// get metric value and convert it into required format depending on the metric type,
+	// then update corresponding metric
+	metricValueString := r.PathValue("metricValue")
+	if metricType == Gauge {
+		metricValue, err := strconv.ParseFloat(metricValueString, 64)
+		if err != nil {
+			http.Error(w,
+				fmt.Sprintf("%v metric value type is invalid, expected float64", metricType),
+				http.StatusBadRequest)
+			return
+		}
+		metricStorage.UpdateGauge(metricName, metricValue)
+	} else if metricType == Counter {
+		metricValue, err := strconv.ParseInt(metricValueString, 10, 64)
+		if err != nil {
+			http.Error(w,
+				fmt.Sprintf("%v metric value type is invalid, expected int64", metricType),
+				http.StatusBadRequest)
+			return
+		}
+		metricStorage.UpdateCounter(metricName, metricValue)
 	}
 
-	metricStorage.UpdateGauge(metricName, metricValue)
-	_, err = w.Write([]byte(""))
-	if err != nil {
-		panic(err)
-	}
-}
-
-func updateCounter(w http.ResponseWriter, r *http.Request) {
-	err := validateMetricRequest(w, r)
-	if err != nil {
-		return
-	}
-
-	metricParameterSlice, err := tokenizeMetricParameters(w, r)
-	if err != nil {
-		return
-	}
-
-	metricName := metricParameterSlice[0]
-	metricValue, err := strconv.ParseInt(metricParameterSlice[1], 10, 64)
-	if err != nil {
-		http.Error(w, "invalid metric value format, expected int64", http.StatusBadRequest)
-	}
-
-	metricStorage.UpdateCounter(metricName, metricValue)
-
-	w.WriteHeader(200)
-	_, err = w.Write([]byte(""))
+	_, err := w.Write([]byte(""))
 	if err != nil {
 		panic(err)
 	}
@@ -83,8 +66,11 @@ func updateCounter(w http.ResponseWriter, r *http.Request) {
 func main() {
 	mux := http.NewServeMux()
 
-	mux.Handle(`/update/gauge/`, http.StripPrefix("/update/gauge/", http.HandlerFunc(updateGauge)))
-	mux.Handle(`/update/counter/`, http.StripPrefix("/update/counter/", http.HandlerFunc(updateCounter)))
+	mux.Handle(`/update/{metricType}/{metricName}/{metricValue}`, http.HandlerFunc(updateMetric))
+	mux.HandleFunc(`/update/{metricType}/`, func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "no metric name provided", http.StatusNotFound)
+	})
+	//mux.Handle(`/update/counter/`, http.StripPrefix("/update/counter/", http.HandlerFunc(updateCounter)))
 	mux.HandleFunc(`/`, func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusBadRequest)
 	})
