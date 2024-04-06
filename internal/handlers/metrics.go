@@ -41,16 +41,16 @@ func FetchMetricHandler(ms *storage.MemStorage) http.HandlerFunc {
 			}
 			valueBytes = []byte(fmt.Sprintf("%v", value))
 		} else if metricType == Counter {
-			value, err := ms.GetGauge(metricName)
+			value, err := ms.GetCounter(metricName)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusNotFound)
 				return
 			}
 			valueBytes = []byte(fmt.Sprintf("%v", value))
 		}
-		w.Header().Set("Content-Type", "text/plain")
-		w.Header().Set("Content-Length", strconv.Itoa(len(valueBytes)))
-		w.Write(valueBytes)
+		if _, err := w.Write(valueBytes); err != nil {
+			panic(err)
+		}
 	}
 }
 
@@ -60,9 +60,9 @@ func ListMetricsHandler(ms *storage.MemStorage) http.HandlerFunc {
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
-		w.Header().Set("Content-Type", "application/json")
-		//w.Header().Set("Content-Length", strconv.Itoa(len(jsonResponse)))
-		w.Write(jsonResponse)
+		if _, err = w.Write(jsonResponse); err != nil {
+			panic(err)
+		}
 	}
 }
 
