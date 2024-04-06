@@ -52,12 +52,14 @@ func sendMetrics(mc *storage.MetricCollector, host string) {
 
 func main() {
 	metrics := storage.NewMetricCollector(storage.RuntimeMetrics)
+	af := new(AgentFlags)
+	ParseFlags(af)
 
-	collectionPeriod := time.Second * 2
-	dumpPeriod := time.Second * 10
+	pollInterval := time.Second * time.Duration(af.pollInterval)
+	reportInterval := time.Second * time.Duration(af.reportInterval)
 
-	collectionDelay := collectionPeriod
-	dumpDelay := dumpPeriod
+	collectionDelay := pollInterval
+	dumpDelay := reportInterval
 
 	fmt.Println("Starting metrics collection")
 	var i int64 = 0
@@ -71,13 +73,13 @@ func main() {
 		collectionDelay -= sleepTime
 		if collectionDelay <= 0 {
 			fmt.Println("collecting metrics")
-			collectionDelay += collectionPeriod
+			collectionDelay += pollInterval
 			collectMetrics(metrics)
 		}
 		if dumpDelay <= 0 {
-			dumpDelay += dumpPeriod
+			dumpDelay += reportInterval
 			fmt.Println("sending metrics")
-			sendMetrics(metrics, `localhost:8080`)
+			sendMetrics(metrics, af.address)
 		}
 	}
 }

@@ -134,7 +134,6 @@ func TestMetricHandler(t *testing.T) {
 			}
 			for _, req := range tt.getRequest {
 				url := ts.URL + req.url
-				t.Log(url)
 				var response *resty.Response
 				var err error
 				switch req.method {
