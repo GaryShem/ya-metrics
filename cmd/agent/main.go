@@ -2,9 +2,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/GaryShem/ya-metrics.git/internal/storage"
-	"net/http"
+	"strconv"
 	"time"
+
+	"github.com/go-resty/resty/v2"
+
+	"github.com/GaryShem/ya-metrics.git/internal/storage"
 )
 
 var GaugeMetrics []string = []string{
@@ -40,31 +43,37 @@ func collectMetrics(mc *storage.MetricCollector) {
 }
 
 func sendMetrics(mc *storage.MetricCollector, host string) {
+	client := resty.New()
 	metrics := mc.DumpMetrics()
+	url := "http://{host}/update/{type}/{name}/{value}"
 	for name, value := range metrics.GaugeMetrics {
-		requestURL := fmt.Sprintf("http://%v/update/gauge/%v/%v", host, name, value)
-		res, err := http.Post(requestURL, "text/plain", nil)
+		request := client.R().SetPathParams(map[string]string{
+			"host":  host,
+			"type":  "gauge",
+			"name":  name,
+			"value": strconv.FormatFloat(value, 'f', 6, 64),
+		})
+		res, err := request.Post(url)
 		if err != nil {
 			panic(err)
 		}
-		if res.StatusCode != 200 {
+		if res.StatusCode() != 200 {
 			panic(res.StatusCode)
-		}
-		if err := res.Body.Close(); err != nil {
-			panic(err)
 		}
 	}
 	for name, value := range metrics.CounterMetrics {
-		requestURL := fmt.Sprintf("http://%v/update/counter/%v/%v", host, name, value)
-		res, err := http.Post(requestURL, "text/plain", nil)
+		request := client.R().SetPathParams(map[string]string{
+			"host":  host,
+			"type":  "counter",
+			"name":  name,
+			"value": strconv.FormatInt(value, 10),
+		})
+		res, err := request.Post(url)
 		if err != nil {
 			panic(err)
 		}
-		if res.StatusCode != 200 {
+		if res.StatusCode() != 200 {
 			panic(res.StatusCode)
-		}
-		if err := res.Body.Close(); err != nil {
-			panic(err)
 		}
 	}
 }
