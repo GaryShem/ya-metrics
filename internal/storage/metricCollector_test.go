@@ -2,9 +2,10 @@ package storage
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"runtime"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGetter(t *testing.T) {
@@ -131,6 +132,35 @@ func TestMetricCollector_DumpMetrics(t *testing.T) {
 			}
 			assert.Equalf(t, tt.want.receivedStorage, *m.DumpMetrics(), "received storage")
 			assert.Equalf(t, tt.want.collectedStorage, m.Storage, "updated collector storage")
+		})
+	}
+}
+
+func TestGetter_ValidMetrics(t *testing.T) {
+	tests := make([]string, len(RuntimeMetrics))
+	copy(tests, RuntimeMetrics)
+	for _, tt := range tests {
+		t.Run(tt, func(t *testing.T) {
+			var rtm runtime.MemStats
+			runtime.ReadMemStats(&rtm)
+			got, err := Getter(&rtm, tt)
+			assert.NoError(t, err)
+			assert.NotEqual(t, 0, got)
+		})
+	}
+}
+
+func TestGetter_InvalidMetrics(t *testing.T) {
+	tests := []string{
+		"wololo",
+	}
+	for _, tt := range tests {
+		t.Run(tt, func(t *testing.T) {
+			var rtm runtime.MemStats
+			runtime.ReadMemStats(&rtm)
+			got, err := Getter(&rtm, tt)
+			assert.Error(t, err)
+			assert.Equal(t, 0., got)
 		})
 	}
 }

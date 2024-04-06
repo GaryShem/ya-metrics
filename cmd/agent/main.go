@@ -10,34 +10,6 @@ import (
 	"github.com/GaryShem/ya-metrics.git/internal/storage"
 )
 
-var GaugeMetrics []string = []string{
-	"Alloc",
-	"BuckHashSys",
-	"Frees",
-	"GCCPUFraction",
-	"GCSys",
-	"HeapAlloc",
-	"HeapIdle",
-	"HeapInuse",
-	"HeapObjects",
-	"HeapReleased",
-	"HeapSys",
-	"LastGC",
-	"Lookups",
-	"MCacheInuse",
-	"MCacheSys",
-	"MSpanInuse",
-	"MSpanSys",
-	"Mallocs",
-	"NextGC",
-	"OtherSys",
-	"PauseTotalNs",
-	"StackInuse",
-	"StackSys",
-	"Sys",
-	"TotalAlloc",
-}
-
 func collectMetrics(mc *storage.MetricCollector) {
 	mc.CollectMetrics()
 }
@@ -79,7 +51,7 @@ func sendMetrics(mc *storage.MetricCollector, host string) {
 }
 
 func main() {
-	metrics := storage.NewMetricCollector(GaugeMetrics)
+	metrics := storage.NewMetricCollector(storage.RuntimeMetrics)
 
 	collectionPeriod := time.Second * 2
 	dumpPeriod := time.Second * 10
