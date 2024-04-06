@@ -55,8 +55,8 @@ func main() {
 	af := new(AgentFlags)
 	ParseFlags(af)
 
-	pollInterval := time.Second * time.Duration(af.pollInterval)
-	reportInterval := time.Second * time.Duration(af.reportInterval)
+	pollInterval := time.Second * time.Duration(*af.pollInterval)
+	reportInterval := time.Second * time.Duration(*af.reportInterval)
 
 	collectionDelay := pollInterval
 	dumpDelay := reportInterval
@@ -79,7 +79,7 @@ func main() {
 		if dumpDelay <= 0 {
 			dumpDelay += reportInterval
 			fmt.Println("sending metrics")
-			sendMetrics(metrics, af.address)
+			sendMetrics(metrics, *af.address)
 		}
 	}
 }

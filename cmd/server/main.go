@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -36,7 +37,8 @@ func main() {
 	r := MetricsRouter(ms)
 	sf := new(ServerFlags)
 	ParseFlags(sf)
-	err := http.ListenAndServe(sf.address, r)
+	fmt.Println(sf.address)
+	err := http.ListenAndServe(*sf.address, r)
 	if err != nil {
 		panic(err)
 	}
