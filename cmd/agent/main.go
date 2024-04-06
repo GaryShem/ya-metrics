@@ -50,6 +50,9 @@ func sendMetrics(mc *storage.MetricCollector, host string) {
 		if res.StatusCode != 200 {
 			panic(res.StatusCode)
 		}
+		if err := res.Body.Close(); err != nil {
+			panic(err)
+		}
 	}
 	for name, value := range metrics.CounterMetrics {
 		requestURL := fmt.Sprintf("http://%v/update/counter/%v/%v", host, name, value)
@@ -59,6 +62,9 @@ func sendMetrics(mc *storage.MetricCollector, host string) {
 		}
 		if res.StatusCode != 200 {
 			panic(res.StatusCode)
+		}
+		if err := res.Body.Close(); err != nil {
+			panic(err)
 		}
 	}
 }
