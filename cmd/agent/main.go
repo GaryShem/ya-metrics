@@ -54,7 +54,7 @@ func main() {
 	metrics := storage.NewMetricCollector(storage.RuntimeMetrics)
 	af := new(AgentFlags)
 	ParseFlags(af)
-	fmt.Printf("Server address: %v", *af.address)
+	fmt.Printf("Server address: %v\n", *af.address)
 
 	pollInterval := time.Second * time.Duration(*af.pollInterval)
 	reportInterval := time.Second * time.Duration(*af.reportInterval)
