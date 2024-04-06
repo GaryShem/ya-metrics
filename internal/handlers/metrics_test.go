@@ -58,9 +58,7 @@ func TestUpdateMetricHandler(t *testing.T) {
 			umh.ServeHTTP(w, req)
 			t.Log(w.Body.String())
 			assert.Equal(t, tt.want.status, w.Code)
-			t.Log(ms)
-			t.Log(tt.want.data)
-			assert.Equal(t, true, reflect.DeepEqual(tt.want.data, ms))
+			assert.Equal(t, true, reflect.DeepEqual(tt.want.data, *ms))
 		})
 	}
 }

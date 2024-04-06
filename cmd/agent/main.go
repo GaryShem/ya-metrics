@@ -74,7 +74,7 @@ func main() {
 
 	fmt.Println("Starting metrics collection")
 	var i int64 = 0
-	for true {
+	for {
 		fmt.Printf("Iteration %v\n", i)
 		i += 1
 		sleepTime := min(dumpDelay, collectionDelay)
