@@ -54,6 +54,7 @@ func main() {
 	metrics := storage.NewMetricCollector(storage.RuntimeMetrics)
 	af := new(AgentFlags)
 	ParseFlags(af)
+	fmt.Printf("Server address: %v", *af.address)
 
 	pollInterval := time.Second * time.Duration(*af.pollInterval)
 	reportInterval := time.Second * time.Duration(*af.reportInterval)
@@ -64,7 +65,6 @@ func main() {
 	fmt.Println("Starting metrics collection")
 	var i int64 = 0
 	for {
-		fmt.Printf("Iteration %v\n", i)
 		i += 1
 		sleepTime := min(dumpDelay, collectionDelay)
 		fmt.Printf("Sleep %v\n", sleepTime)

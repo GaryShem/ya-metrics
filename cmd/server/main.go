@@ -37,7 +37,7 @@ func main() {
 	r := MetricsRouter(ms)
 	sf := new(ServerFlags)
 	ParseFlags(sf)
-	fmt.Println(sf.address)
+	fmt.Printf("Server listening on %v\n", *sf.address)
 	err := http.ListenAndServe(*sf.address, r)
 	if err != nil {
 		panic(err)
