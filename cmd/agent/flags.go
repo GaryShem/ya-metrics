@@ -2,15 +2,15 @@ package main
 
 import (
 	"flag"
-	"os"
-	"strconv"
+
+	"github.com/caarlos0/env/v6"
 )
 
-//type envConfig struct {
-//	address        string `env:"ADDRESS"`
-//	reportInterval int    `env:"REPORT_INTERVAL"`
-//	pollInterval   int    `env:"POLL_INTERVAL"`
-//}
+type envConfig struct {
+	Address        string `env:"ADDRESS"`
+	ReportInterval int    `env:"REPORT_INTERVAL"`
+	PollInterval   int    `env:"POLL_INTERVAL"`
+}
 
 type AgentFlags struct {
 	address        *string
@@ -24,37 +24,17 @@ func ParseFlags(af *AgentFlags) {
 	af.pollInterval = flag.Int("p", 2, "metric polling interval")
 	flag.Parse()
 
-	addressEnv := os.Getenv("ADDRESS")
-	if addressEnv != "" {
-		af.address = &addressEnv
+	var ec envConfig
+	if err := env.Parse(&ec); err != nil {
+		panic(err)
 	}
-	reportIntervalEnv := os.Getenv("REPORT_INTERVAL")
-	if reportIntervalEnv != "" {
-		reportInterval, err := strconv.Atoi(reportIntervalEnv)
-		if err == nil {
-			af.reportInterval = &reportInterval
-		}
+	if ec.Address != "" {
+		af.address = &ec.Address
 	}
-	pollIntervalEnv := os.Getenv("POLL_INTERVAL")
-	if pollIntervalEnv != "" {
-		pollInterval, err := strconv.Atoi(reportIntervalEnv)
-		if err == nil {
-			af.pollInterval = &pollInterval
-		}
+	if ec.ReportInterval != 0 {
+		af.reportInterval = &ec.ReportInterval
 	}
-
-	//var ec envConfig
-	//if err := env.Parse(&ec); err != nil {
-	//	panic(err)
-	//}
-	//
-	//if ec.address != "" {
-	//	af.address = &ec.address
-	//}
-	//if ec.reportInterval != 0 {
-	//	af.reportInterval = &ec.reportInterval
-	//}
-	//if ec.pollInterval != 0 {
-	//	af.pollInterval = &ec.pollInterval
-	//}
+	if ec.PollInterval != 0 {
+		af.pollInterval = &ec.PollInterval
+	}
 }

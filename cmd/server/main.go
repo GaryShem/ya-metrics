@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 
 	"github.com/GaryShem/ya-metrics.git/internal/handlers"
 	"github.com/GaryShem/ya-metrics.git/internal/storage"
@@ -13,7 +12,7 @@ import (
 
 func MetricsRouter(ms *storage.MemStorage) chi.Router {
 	r := chi.NewRouter()
-	r.Use(middleware.Logger)
+	//r.Use(middleware.Logger)
 	r.Route(`/`, func(r chi.Router) {
 		r.Route(`/update`, func(r chi.Router) {
 			r.Post(`/`, func(rw http.ResponseWriter, r *http.Request) {
