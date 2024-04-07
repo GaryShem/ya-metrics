@@ -1,39 +1,44 @@
-package storage
+package agent
 
 import (
 	"fmt"
 	"math/rand"
 	"runtime"
+
+	"github.com/GaryShem/ya-metrics.git/internal/shared"
 )
 
-var RuntimeMetrics []string = []string{
-	"Alloc",
-	"BuckHashSys",
-	"Frees",
-	"GCCPUFraction",
-	"GCSys",
-	"HeapAlloc",
-	"HeapIdle",
-	"HeapInuse",
-	"HeapObjects",
-	"HeapReleased",
-	"HeapSys",
-	"LastGC",
-	"Lookups",
-	"MCacheInuse",
-	"MCacheSys",
-	"MSpanInuse",
-	"MSpanSys",
-	"Mallocs",
-	"NextGC",
-	"OtherSys",
-	"PauseTotalNs",
-	"StackInuse",
-	"StackSys",
-	"Sys",
-	"TotalAlloc",
+func SupportedRuntimeMetrics() []string {
+	return []string{
+		"Alloc",
+		"BuckHashSys",
+		"Frees",
+		"GCCPUFraction",
+		"GCSys",
+		"HeapAlloc",
+		"HeapIdle",
+		"HeapInuse",
+		"HeapObjects",
+		"HeapReleased",
+		"HeapSys",
+		"LastGC",
+		"Lookups",
+		"MCacheInuse",
+		"MCacheSys",
+		"MSpanInuse",
+		"MSpanSys",
+		"Mallocs",
+		"NextGC",
+		"OtherSys",
+		"PauseTotalNs",
+		"StackInuse",
+		"StackSys",
+		"Sys",
+		"TotalAlloc",
+	}
 }
 
+//nolint:funlen
 func Getter(m *runtime.MemStats, metricName string) (float64, error) {
 	switch metricName {
 	case "Alloc":
@@ -43,7 +48,7 @@ func Getter(m *runtime.MemStats, metricName string) (float64, error) {
 	case "Frees":
 		return float64(m.Frees), nil
 	case "GCCPUFraction":
-		return float64(m.GCCPUFraction), nil
+		return m.GCCPUFraction, nil
 	case "GCSys":
 		return float64(m.GCSys), nil
 	case "HeapAlloc":
@@ -91,7 +96,7 @@ func Getter(m *runtime.MemStats, metricName string) (float64, error) {
 }
 
 type MetricCollector struct {
-	Storage                 MemStorage
+	Storage                 shared.MemStorage
 	RuntimeGaugeMetricNames []string
 }
 
@@ -99,27 +104,28 @@ func NewMetricCollector(gaugeMetrics []string) *MetricCollector {
 	tmpGaugeMetrics := make([]string, len(gaugeMetrics))
 	copy(tmpGaugeMetrics, gaugeMetrics)
 	return &MetricCollector{
-		Storage:                 *NewMemStorage(),
+		Storage:                 *shared.NewMemStorage(),
 		RuntimeGaugeMetricNames: tmpGaugeMetrics,
 	}
 }
 
-func (m *MetricCollector) CollectMetrics() {
+func (m *MetricCollector) CollectMetrics() error {
 	var rtm runtime.MemStats
 	runtime.ReadMemStats(&rtm)
 	for _, gaugeMetric := range m.RuntimeGaugeMetricNames {
 		value, err := Getter(&rtm, gaugeMetric)
 		if err != nil {
-			panic(err)
+			return fmt.Errorf("could not read metric %s: %s", gaugeMetric, err)
 		}
 		m.Storage.UpdateGauge(gaugeMetric, value)
 		m.Storage.UpdateCounter("PollCount", 1)
 	}
-	m.Storage.UpdateGauge("RandomValue", rand.Float64())
+	m.Storage.UpdateGauge("RandomValue", rand.Float64()) //nolint:gosec // do not need cryptography on this
+	return nil
 }
 
-func (m *MetricCollector) DumpMetrics() *MemStorage {
-	ms := NewMemStorage()
+func (m *MetricCollector) DumpMetrics() *shared.MemStorage {
+	ms := shared.NewMemStorage()
 	for name, gaugeValue := range m.Storage.GaugeMetrics {
 		ms.UpdateGauge(name, gaugeValue)
 	}

@@ -1,9 +1,10 @@
-package storage
+package shared
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMemStorage_UpdateGauge(t *testing.T) {
@@ -150,7 +151,7 @@ func TestMemStorage_GetGauge(t *testing.T) {
 		data    data
 		metric  string
 		want    float64
-		wantErr assert.ErrorAssertionFunc
+		wantErr require.ErrorAssertionFunc
 	}{
 		{
 			name: "Get Valid Gauge Metric",
@@ -162,7 +163,7 @@ func TestMemStorage_GetGauge(t *testing.T) {
 			},
 			metric:  "foo",
 			want:    3.14,
-			wantErr: assert.NoError,
+			wantErr: require.NoError,
 		},
 		{
 			name: "Get Invalid Gauge Metric",
@@ -174,7 +175,7 @@ func TestMemStorage_GetGauge(t *testing.T) {
 			},
 			metric:  "bar",
 			want:    0,
-			wantErr: assert.Error,
+			wantErr: require.Error,
 		},
 	}
 
@@ -238,6 +239,90 @@ func TestMemStorage_GetCounter(t *testing.T) {
 			got, err := ms.GetCounter(tt.metric)
 			tt.wantErr(t, err)
 			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestNewMemStorage(t *testing.T) {
+	tests := []struct {
+		name string
+		want *MemStorage
+	}{
+		{
+			name: "Test New Mem Storage",
+			want: &MemStorage{
+				GaugeMetrics:   map[string]float64{},
+				CounterMetrics: map[string]int64{},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equalf(t, tt.want, NewMemStorage(), "NewMemStorage()")
+		})
+	}
+}
+
+func TestMemStorage_GetCounters(t *testing.T) {
+	type fields struct {
+		GaugeMetrics   map[string]float64
+		CounterMetrics map[string]int64
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   map[string]int64
+	}{
+		{
+			name: "Get Counters Test",
+			fields: fields{
+				GaugeMetrics: map[string]float64{},
+				CounterMetrics: map[string]int64{
+					"foo": 42,
+				},
+			},
+			want: map[string]int64{"foo": 42},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ms := &MemStorage{
+				GaugeMetrics:   tt.fields.GaugeMetrics,
+				CounterMetrics: tt.fields.CounterMetrics,
+			}
+			assert.Equalf(t, tt.want, ms.GetCounters(), "GetCounters()")
+		})
+	}
+}
+
+func TestMemStorage_GetGauges(t *testing.T) {
+	type fields struct {
+		GaugeMetrics   map[string]float64
+		CounterMetrics map[string]int64
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   map[string]float64
+	}{
+		{
+			name: "Get Counters Test",
+			fields: fields{
+				GaugeMetrics: map[string]float64{
+					"foo": 42,
+				},
+				CounterMetrics: map[string]int64{},
+			},
+			want: map[string]float64{"foo": 42},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ms := &MemStorage{
+				GaugeMetrics:   tt.fields.GaugeMetrics,
+				CounterMetrics: tt.fields.CounterMetrics,
+			}
+			assert.Equalf(t, tt.want, ms.GetGauges(), "GetGauges()")
 		})
 	}
 }

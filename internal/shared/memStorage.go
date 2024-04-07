@@ -1,4 +1,4 @@
-package storage
+package shared
 
 import "fmt"
 
@@ -7,11 +7,20 @@ type MemStorage struct {
 	CounterMetrics map[string]int64   `json:"counterMetrics"`
 }
 
-type repository interface {
-	UpdateGauge(metricName string, value float64)
-	UpdateCounter(metricName string, value int64)
-	GetGauge(metricName string) (float64, error)
-	GetCounter(metricName string) (int64, error)
+func (ms *MemStorage) GetGauges() map[string]float64 {
+	result := make(map[string]float64)
+	for k, v := range ms.GaugeMetrics {
+		result[k] = v
+	}
+	return result
+}
+
+func (ms *MemStorage) GetCounters() map[string]int64 {
+	result := make(map[string]int64)
+	for k, v := range ms.CounterMetrics {
+		result[k] = v
+	}
+	return result
 }
 
 func NewMemStorage() *MemStorage {
@@ -46,4 +55,4 @@ func (ms *MemStorage) GetCounter(metricName string) (int64, error) {
 	return value, nil
 }
 
-var _ repository = &MemStorage{}
+var _ Repository = &MemStorage{}

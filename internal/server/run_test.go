@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"net/http"
@@ -7,13 +7,14 @@ import (
 
 	"github.com/go-resty/resty/v2"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
-	"github.com/GaryShem/ya-metrics.git/internal/storage"
+	"github.com/GaryShem/ya-metrics.git/internal/shared"
 )
 
 func TestMetricHandler(t *testing.T) {
 	ts := httptest.NewServer(MetricsRouter(
-		&storage.MemStorage{
+		&shared.MemStorage{
 			GaugeMetrics:   map[string]float64{},
 			CounterMetrics: map[string]int64{},
 		},
@@ -118,7 +119,6 @@ func TestMetricHandler(t *testing.T) {
 			client := resty.New()
 			for _, req := range tt.updateRequest {
 				url := ts.URL + req.url
-				t.Log(url)
 				var response *resty.Response
 				var err error
 				switch req.method {
@@ -129,7 +129,7 @@ func TestMetricHandler(t *testing.T) {
 				default:
 					panic("invalid http method")
 				}
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, req.code, response.StatusCode())
 			}
 			for _, req := range tt.getRequest {
@@ -144,7 +144,7 @@ func TestMetricHandler(t *testing.T) {
 				default:
 					panic("invalid http method")
 				}
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, req.code, response.StatusCode())
 				if req.code == 200 {
 					assert.Equal(t, req.want, string(response.Body()))

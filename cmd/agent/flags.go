@@ -4,6 +4,8 @@ import (
 	"flag"
 
 	"github.com/caarlos0/env/v6"
+
+	"github.com/GaryShem/ya-metrics.git/internal/agent"
 )
 
 type envConfig struct {
@@ -12,16 +14,10 @@ type envConfig struct {
 	PollInterval   int    `env:"POLL_INTERVAL"`
 }
 
-type AgentFlags struct {
-	address        *string
-	reportInterval *int
-	pollInterval   *int
-}
-
-func ParseFlags(af *AgentFlags) {
-	af.address = flag.String("a", "localhost:8080", "server address:port")
-	af.reportInterval = flag.Int("r", 10, "metric reporting interval")
-	af.pollInterval = flag.Int("p", 2, "metric polling interval")
+func ParseFlags(af *agent.AgentFlags) {
+	af.Address = flag.String("a", "localhost:8080", "server address:port")
+	af.ReportInterval = flag.Int("r", 10, "metric reporting interval, seconds int")
+	af.PollInterval = flag.Int("p", 2, "metric polling interval, seconds int")
 	flag.Parse()
 
 	var ec envConfig
@@ -29,12 +25,12 @@ func ParseFlags(af *AgentFlags) {
 		panic(err)
 	}
 	if ec.Address != "" {
-		af.address = &ec.Address
+		af.Address = &ec.Address
 	}
 	if ec.ReportInterval != 0 {
-		af.reportInterval = &ec.ReportInterval
+		af.ReportInterval = &ec.ReportInterval
 	}
 	if ec.PollInterval != 0 {
-		af.pollInterval = &ec.PollInterval
+		af.PollInterval = &ec.PollInterval
 	}
 }

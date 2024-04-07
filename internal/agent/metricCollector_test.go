@@ -1,11 +1,13 @@
-package storage
+package agent
 
 import (
-	"fmt"
 	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/GaryShem/ya-metrics.git/internal/shared"
 )
 
 func TestGetter(t *testing.T) {
@@ -17,7 +19,7 @@ func TestGetter(t *testing.T) {
 		name    string
 		args    args
 		want    float64
-		wantErr assert.ErrorAssertionFunc
+		wantErr require.ErrorAssertionFunc
 	}{
 		{
 			name: "Allowed Metric",
@@ -28,7 +30,7 @@ func TestGetter(t *testing.T) {
 				metricName: "Alloc",
 			},
 			want:    1,
-			wantErr: assert.NoError,
+			wantErr: require.NoError,
 		},
 		{
 			name: "Not Allowed Metric",
@@ -39,37 +41,38 @@ func TestGetter(t *testing.T) {
 				metricName: "wololo",
 			},
 			want:    0,
-			wantErr: assert.Error,
+			wantErr: require.Error,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := Getter(tt.args.m, tt.args.metricName)
-			if !tt.wantErr(t, err, fmt.Sprintf("Getter(%v, %v)", tt.args.m, tt.args.metricName)) {
-				t.Errorf("Getter() error = %v, wantErr %v", err, tt.wantErr)
+			tt.wantErr(t, err)
+			if err == nil {
+				assert.InEpsilon(t, tt.want, got, 0.001)
 			}
-			assert.Equal(t, tt.want, got)
 		})
 	}
 }
 
 func TestMetricCollector_CollectMetrics(t *testing.T) {
 	tests := []struct {
-		name                    string
-		runtimeGaugeMetricNames []string
-		pollCount               int64
+		name      string
+		metrics   []string
+		pollCount int64
 	}{
 		{
-			name:                    "Test Collecting Metrics",
-			runtimeGaugeMetricNames: []string{"Alloc"},
-			pollCount:               1,
+			name:      "Test Collecting Metrics",
+			metrics:   []string{"Alloc"},
+			pollCount: 1,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := NewMetricCollector(tt.runtimeGaugeMetricNames)
-			m.CollectMetrics()
-			for _, name := range tt.runtimeGaugeMetricNames {
+			m := NewMetricCollector(tt.metrics)
+			err := m.CollectMetrics()
+			require.NoError(t, err)
+			for _, name := range tt.metrics {
 				assert.NotEqual(t, 0, m.Storage.GaugeMetrics[name])
 			}
 			assert.Equal(t, tt.pollCount, m.Storage.CounterMetrics["PollCount"])
@@ -79,12 +82,12 @@ func TestMetricCollector_CollectMetrics(t *testing.T) {
 
 func TestMetricCollector_DumpMetrics(t *testing.T) {
 	type fields struct {
-		Storage                 MemStorage
+		Storage                 shared.MemStorage
 		RuntimeGaugeMetricNames []string
 	}
 	type want struct {
-		receivedStorage  MemStorage
-		collectedStorage MemStorage
+		receivedStorage  shared.MemStorage
+		collectedStorage shared.MemStorage
 	}
 	tests := []struct {
 		name   string
@@ -94,7 +97,7 @@ func TestMetricCollector_DumpMetrics(t *testing.T) {
 		{
 			name: "Test Dump Metrics",
 			fields: fields{
-				Storage: MemStorage{
+				Storage: shared.MemStorage{
 					GaugeMetrics: map[string]float64{
 						"Alloc": 2,
 					},
@@ -105,7 +108,7 @@ func TestMetricCollector_DumpMetrics(t *testing.T) {
 				RuntimeGaugeMetricNames: []string{"Alloc"},
 			},
 			want: want{
-				receivedStorage: MemStorage{
+				receivedStorage: shared.MemStorage{
 					GaugeMetrics: map[string]float64{
 						"Alloc": 2,
 					},
@@ -113,7 +116,7 @@ func TestMetricCollector_DumpMetrics(t *testing.T) {
 						"PollCount": 1,
 					},
 				},
-				collectedStorage: MemStorage{
+				collectedStorage: shared.MemStorage{
 					GaugeMetrics: map[string]float64{
 						"Alloc": 2,
 					},
@@ -137,14 +140,15 @@ func TestMetricCollector_DumpMetrics(t *testing.T) {
 }
 
 func TestGetter_ValidMetrics(t *testing.T) {
-	tests := make([]string, len(RuntimeMetrics))
-	copy(tests, RuntimeMetrics)
+	runtimeMetrics := SupportedRuntimeMetrics()
+	tests := make([]string, len(runtimeMetrics))
+	copy(tests, runtimeMetrics)
 	for _, tt := range tests {
 		t.Run(tt, func(t *testing.T) {
 			var rtm runtime.MemStats
 			runtime.ReadMemStats(&rtm)
 			got, err := Getter(&rtm, tt)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.NotEqual(t, 0, got)
 		})
 	}
@@ -159,8 +163,10 @@ func TestGetter_InvalidMetrics(t *testing.T) {
 			var rtm runtime.MemStats
 			runtime.ReadMemStats(&rtm)
 			got, err := Getter(&rtm, tt)
-			assert.Error(t, err)
-			assert.Equal(t, 0., got)
+			require.Error(t, err)
+			if err == nil {
+				assert.Equal(t, 0., got)
+			}
 		})
 	}
 }
