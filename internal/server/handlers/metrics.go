@@ -47,7 +47,7 @@ func (h *RepoHandler) GetMetric(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
-		valueBytes = []byte(fmt.Sprintf("%v", value.Value))
+		valueBytes = []byte(fmt.Sprint(value.Value))
 	default:
 		http.Error(w, fmt.Sprintf("%v metric type is not supported", metricType), http.StatusBadRequest)
 		return
@@ -58,7 +58,7 @@ func (h *RepoHandler) GetMetric(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *RepoHandler) ListMetrics(w http.ResponseWriter, r *http.Request) {
+func (h *RepoHandler) ListMetrics(w http.ResponseWriter, _ *http.Request) {
 	jsonResponse, err := json.Marshal(h.repo)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("could not marshal json: %v", err.Error()), http.StatusInternalServerError)
