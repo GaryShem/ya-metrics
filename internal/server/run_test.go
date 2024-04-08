@@ -9,14 +9,15 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/GaryShem/ya-metrics.git/internal/shared"
+	"github.com/GaryShem/ya-metrics.git/internal/shared/storage"
+	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/metrics"
 )
 
 func TestMetricHandler(t *testing.T) {
 	ts := httptest.NewServer(MetricsRouter(
-		&shared.MemStorage{
-			GaugeMetrics:   map[string]float64{},
-			CounterMetrics: map[string]int64{},
+		&storage.MemStorage{
+			GaugeMetrics:   map[string]*metrics.Gauge{},
+			CounterMetrics: map[string]*metrics.Counter{},
 		},
 	))
 	type testRequest struct {
@@ -45,7 +46,7 @@ func TestMetricHandler(t *testing.T) {
 					method: http.MethodGet,
 					url:    "/value/gauge/foo",
 					code:   200,
-					want:   "2",
+					want:   "{gauge foo 2}",
 				},
 			},
 		},
@@ -84,7 +85,7 @@ func TestMetricHandler(t *testing.T) {
 					method: http.MethodGet,
 					url:    "/value/counter/foo",
 					code:   200,
-					want:   "2",
+					want:   "{counter foo 2}",
 				},
 			},
 		},
@@ -130,7 +131,7 @@ func TestMetricHandler(t *testing.T) {
 					panic("invalid http method")
 				}
 				require.NoError(t, err)
-				assert.Equal(t, req.code, response.StatusCode())
+				require.Equal(t, req.code, response.StatusCode())
 			}
 			for _, req := range tt.getRequest {
 				url := ts.URL + req.url
@@ -145,8 +146,8 @@ func TestMetricHandler(t *testing.T) {
 					panic("invalid http method")
 				}
 				require.NoError(t, err)
-				assert.Equal(t, req.code, response.StatusCode())
-				if req.code == 200 {
+				require.Equal(t, req.code, response.StatusCode())
+				if req.code == http.StatusOK {
 					assert.Equal(t, req.want, string(response.Body()))
 				}
 			}

@@ -5,7 +5,7 @@ import (
 	"math/rand"
 	"runtime"
 
-	"github.com/GaryShem/ya-metrics.git/internal/shared"
+	"github.com/GaryShem/ya-metrics.git/internal/shared/storage"
 )
 
 func SupportedRuntimeMetrics() []string {
@@ -96,7 +96,7 @@ func Getter(m *runtime.MemStats, metricName string) (float64, error) {
 }
 
 type MetricCollector struct {
-	Storage                 shared.MemStorage
+	Storage                 storage.Repository
 	RuntimeGaugeMetricNames []string
 }
 
@@ -104,7 +104,7 @@ func NewMetricCollector(gaugeMetrics []string) *MetricCollector {
 	tmpGaugeMetrics := make([]string, len(gaugeMetrics))
 	copy(tmpGaugeMetrics, gaugeMetrics)
 	return &MetricCollector{
-		Storage:                 *shared.NewMemStorage(),
+		Storage:                 storage.NewMemStorage(),
 		RuntimeGaugeMetricNames: tmpGaugeMetrics,
 	}
 }
@@ -115,7 +115,7 @@ func (m *MetricCollector) CollectMetrics() error {
 	for _, gaugeMetric := range m.RuntimeGaugeMetricNames {
 		value, err := Getter(&rtm, gaugeMetric)
 		if err != nil {
-			return fmt.Errorf("could not read metric %s: %s", gaugeMetric, err)
+			return fmt.Errorf("could not read metric %s: %w", gaugeMetric, err)
 		}
 		m.Storage.UpdateGauge(gaugeMetric, value)
 		m.Storage.UpdateCounter("PollCount", 1)
@@ -124,16 +124,19 @@ func (m *MetricCollector) CollectMetrics() error {
 	return nil
 }
 
-func (m *MetricCollector) DumpMetrics() *shared.MemStorage {
-	ms := shared.NewMemStorage()
-	for name, gaugeValue := range m.Storage.GaugeMetrics {
-		ms.UpdateGauge(name, gaugeValue)
+func (m *MetricCollector) DumpMetrics() (*storage.MemStorage, error) {
+	ms := storage.NewMemStorage()
+	for name, gaugeValue := range m.Storage.GetGauges() {
+		ms.UpdateGauge(name, gaugeValue.Value)
 	}
-	for name, counterValue := range m.Storage.CounterMetrics {
-		ms.UpdateCounter(name, counterValue)
+	for name, counterValue := range m.Storage.GetCounters() {
+		ms.UpdateCounter(name, counterValue.Value)
 	}
 
-	m.Storage.CounterMetrics["PollCount"] = 0
+	err := m.Storage.ResetCounter("PollCount")
+	if err != nil {
+		return nil, err
+	}
 
-	return ms
+	return ms, nil
 }

@@ -22,14 +22,17 @@ func collectMetrics(mc *MetricCollector) error {
 
 func sendMetrics(mc *MetricCollector, host string) error {
 	client := resty.New()
-	metrics := mc.DumpMetrics()
+	metrics, err := mc.DumpMetrics()
+	if err != nil {
+		return fmt.Errorf("error dumping metrics: %s", err)
+	}
 	url := "http://{host}/update/{type}/{name}/{value}"
 	for name, value := range metrics.GaugeMetrics {
 		request := client.R().SetPathParams(map[string]string{
 			"host":  host,
 			"type":  "gauge",
 			"name":  name,
-			"value": strconv.FormatFloat(value, 'f', 6, 64),
+			"value": strconv.FormatFloat(value.Value, 'f', 6, 64),
 		})
 		res, err := request.Post(url)
 		if err != nil {
@@ -45,7 +48,7 @@ func sendMetrics(mc *MetricCollector, host string) error {
 			"host":  host,
 			"type":  "counter",
 			"name":  name,
-			"value": strconv.FormatInt(value, 10),
+			"value": strconv.FormatInt(value.Value, 10),
 		})
 		res, err := request.Post(url)
 		if err != nil {

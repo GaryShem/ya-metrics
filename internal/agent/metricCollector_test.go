@@ -1,13 +1,15 @@
 package agent
 
 import (
+	"encoding/json"
 	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/GaryShem/ya-metrics.git/internal/shared"
+	"github.com/GaryShem/ya-metrics.git/internal/shared/storage"
+	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/metrics"
 )
 
 func TestGetter(t *testing.T) {
@@ -59,12 +61,12 @@ func TestMetricCollector_CollectMetrics(t *testing.T) {
 	tests := []struct {
 		name      string
 		metrics   []string
-		pollCount int64
+		pollCount *metrics.Counter
 	}{
 		{
 			name:      "Test Collecting Metrics",
 			metrics:   []string{"Alloc"},
-			pollCount: 1,
+			pollCount: metrics.NewCounter("PollCount", 1),
 		},
 	}
 	for _, tt := range tests {
@@ -73,21 +75,23 @@ func TestMetricCollector_CollectMetrics(t *testing.T) {
 			err := m.CollectMetrics()
 			require.NoError(t, err)
 			for _, name := range tt.metrics {
-				assert.NotEqual(t, 0, m.Storage.GaugeMetrics[name])
+				assert.NotEqual(t, 0, m.Storage.GetGauges()[name])
 			}
-			assert.Equal(t, tt.pollCount, m.Storage.CounterMetrics["PollCount"])
+			pollCount, err := m.Storage.GetCounter("PollCount")
+			require.NoError(t, err)
+			assert.Equal(t, tt.pollCount, pollCount)
 		})
 	}
 }
 
 func TestMetricCollector_DumpMetrics(t *testing.T) {
 	type fields struct {
-		Storage                 shared.MemStorage
+		Storage                 *storage.MemStorage
 		RuntimeGaugeMetricNames []string
 	}
 	type want struct {
-		receivedStorage  shared.MemStorage
-		collectedStorage shared.MemStorage
+		receivedStorage  *storage.MemStorage
+		collectedStorage *storage.MemStorage
 	}
 	tests := []struct {
 		name   string
@@ -97,31 +101,31 @@ func TestMetricCollector_DumpMetrics(t *testing.T) {
 		{
 			name: "Test Dump Metrics",
 			fields: fields{
-				Storage: shared.MemStorage{
-					GaugeMetrics: map[string]float64{
-						"Alloc": 2,
+				Storage: &storage.MemStorage{
+					GaugeMetrics: map[string]*metrics.Gauge{
+						"Alloc": metrics.NewGauge("Alloc", 2),
 					},
-					CounterMetrics: map[string]int64{
-						"PollCount": 1,
+					CounterMetrics: map[string]*metrics.Counter{
+						"PollCount": metrics.NewCounter("PollCount", 1),
 					},
 				},
 				RuntimeGaugeMetricNames: []string{"Alloc"},
 			},
 			want: want{
-				receivedStorage: shared.MemStorage{
-					GaugeMetrics: map[string]float64{
-						"Alloc": 2,
+				receivedStorage: &storage.MemStorage{
+					GaugeMetrics: map[string]*metrics.Gauge{
+						"Alloc": metrics.NewGauge("Alloc", 2),
 					},
-					CounterMetrics: map[string]int64{
-						"PollCount": 1,
+					CounterMetrics: map[string]*metrics.Counter{
+						"PollCount": metrics.NewCounter("PollCount", 1),
 					},
 				},
-				collectedStorage: shared.MemStorage{
-					GaugeMetrics: map[string]float64{
-						"Alloc": 2,
+				collectedStorage: &storage.MemStorage{
+					GaugeMetrics: map[string]*metrics.Gauge{
+						"Alloc": metrics.NewGauge("Alloc", 2),
 					},
-					CounterMetrics: map[string]int64{
-						"PollCount": 0,
+					CounterMetrics: map[string]*metrics.Counter{
+						"PollCount": metrics.NewCounter("PollCount", 0),
 					},
 				},
 			},
@@ -133,8 +137,19 @@ func TestMetricCollector_DumpMetrics(t *testing.T) {
 				Storage:                 tt.fields.Storage,
 				RuntimeGaugeMetricNames: tt.fields.RuntimeGaugeMetricNames,
 			}
-			assert.Equalf(t, tt.want.receivedStorage, *m.DumpMetrics(), "received storage")
-			assert.Equalf(t, tt.want.collectedStorage, m.Storage, "updated collector storage")
+			metricDump, err := m.DumpMetrics()
+			require.NoError(t, err)
+			wantRcvd, err := json.Marshal(tt.want.receivedStorage)
+			require.NoError(t, err)
+			gotRcvd, err := json.Marshal(metricDump)
+			require.NoError(t, err)
+			assert.Equal(t, string(wantRcvd), string(gotRcvd))
+
+			wantCollected, err := json.Marshal(tt.want.collectedStorage)
+			require.NoError(t, err)
+			gotCollected, err := json.Marshal(m.Storage)
+			require.NoError(t, err)
+			assert.Equal(t, string(wantCollected), string(gotCollected))
 		})
 	}
 }
@@ -165,7 +180,7 @@ func TestGetter_InvalidMetrics(t *testing.T) {
 			got, err := Getter(&rtm, tt)
 			require.Error(t, err)
 			if err == nil {
-				assert.Equal(t, 0., got)
+				assert.Equal(t, 0, got)
 			}
 		})
 	}

@@ -9,7 +9,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/GaryShem/ya-metrics.git/internal/server"
-	"github.com/GaryShem/ya-metrics.git/internal/shared"
+	"github.com/GaryShem/ya-metrics.git/internal/shared/storage"
+	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/metrics"
 )
 
 func TestRunAgent(t *testing.T) {
@@ -17,9 +18,9 @@ func TestRunAgent(t *testing.T) {
 	pollInterval := 1
 
 	ts := httptest.NewServer(server.MetricsRouter(
-		&shared.MemStorage{
-			GaugeMetrics:   map[string]float64{},
-			CounterMetrics: map[string]int64{},
+		&storage.MemStorage{
+			GaugeMetrics:   map[string]*metrics.Gauge{},
+			CounterMetrics: map[string]*metrics.Counter{},
 		},
 	))
 	defer ts.Close()
