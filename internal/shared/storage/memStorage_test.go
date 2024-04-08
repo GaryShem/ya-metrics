@@ -146,11 +146,11 @@ func TestMemStorage_UpdateCounter(t *testing.T) {
 				CounterMetrics: tt.fields.counterMetrics,
 			}
 			ms.UpdateCounter(tt.args.metricName, tt.args.value)
-			wantJson, err := json.Marshal(tt.want)
+			wantJSON, err := json.Marshal(tt.want)
 			require.NoError(t, err)
-			gotJson, err := json.Marshal(ms)
+			gotJSON, err := json.Marshal(ms)
 			require.NoError(t, err)
-			assert.Equal(t, string(wantJson), string(gotJson))
+			assert.Equal(t, string(wantJSON), string(gotJSON))
 		})
 	}
 }
