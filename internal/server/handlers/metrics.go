@@ -40,14 +40,14 @@ func (h *RepoHandler) GetMetric(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
-		valueBytes = []byte(fmt.Sprintf("%v", *value))
+		valueBytes = []byte(fmt.Sprintf("%v", value.Value))
 	case Counter:
 		value, err := h.repo.GetCounter(metricName)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
-		valueBytes = []byte(fmt.Sprintf("%v", *value))
+		valueBytes = []byte(fmt.Sprintf("%v", value.Value))
 	default:
 		http.Error(w, fmt.Sprintf("%v metric type is not supported", metricType), http.StatusBadRequest)
 		return
