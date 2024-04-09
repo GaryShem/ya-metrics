@@ -1,10 +1,13 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"slices"
 	"strconv"
+
+	"github.com/go-chi/chi/v5"
 
 	"github.com/GaryShem/ya-metrics.git/internal/storage"
 )
@@ -16,6 +19,53 @@ const (
 
 var supportedMetricTypes = []string{Gauge, Counter}
 
+func FetchMetricHandler(ms *storage.MemStorage) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// get metric type and make sure it's an acceptable one (gauge, counter for iteration 1)
+		metricType := chi.URLParam(r, "metricType")
+		if !slices.Contains(supportedMetricTypes, metricType) {
+			http.Error(w, fmt.Sprintf("%v metric type is not supported", metricType), http.StatusNotFound)
+			return
+		}
+		// get metric name
+		metricName := chi.URLParam(r, "metricName")
+		if metricName == "" {
+			http.Error(w, fmt.Sprintf("%v metric name is empty", metricType), http.StatusNotFound)
+		}
+		var valueBytes []byte
+		if metricType == Gauge {
+			value, err := ms.GetGauge(metricName)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusNotFound)
+				return
+			}
+			valueBytes = []byte(fmt.Sprintf("%v", value))
+		} else if metricType == Counter {
+			value, err := ms.GetCounter(metricName)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusNotFound)
+				return
+			}
+			valueBytes = []byte(fmt.Sprintf("%v", value))
+		}
+		if _, err := w.Write(valueBytes); err != nil {
+			panic(err)
+		}
+	}
+}
+
+func ListMetricsHandler(ms *storage.MemStorage) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		jsonResponse, err := json.Marshal(ms)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		if _, err = w.Write(jsonResponse); err != nil {
+			panic(err)
+		}
+	}
+}
+
 func UpdateMetricHandler(ms *storage.MemStorage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// make sure metrics are passed via POST
@@ -24,19 +74,19 @@ func UpdateMetricHandler(ms *storage.MemStorage) http.HandlerFunc {
 			return
 		}
 		// get metric type and make sure it's an acceptable one (gauge, counter for iteration 1)
-		metricType := r.PathValue("metricType")
+		metricType := chi.URLParam(r, "metricType")
 		if !slices.Contains(supportedMetricTypes, metricType) {
 			http.Error(w, fmt.Sprintf("%v metric type is not supported", metricType), http.StatusBadRequest)
 			return
 		}
 		// get metric name
-		metricName := r.PathValue("metricName")
+		metricName := chi.URLParam(r, "metricName")
 		if metricName == "" {
 			http.Error(w, fmt.Sprintf("%v metric name is empty", metricType), http.StatusNotFound)
 		}
 		// get metric value and convert it into required format depending on the metric type,
 		// then update corresponding metric
-		metricValueString := r.PathValue("metricValue")
+		metricValueString := chi.URLParam(r, "metricValue")
 		if metricType == Gauge {
 			metricValue, err := strconv.ParseFloat(metricValueString, 64)
 			if err != nil {
