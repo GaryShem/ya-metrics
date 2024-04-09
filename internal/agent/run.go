@@ -22,9 +22,9 @@ func collectMetrics(mc *MetricCollector) error {
 
 func sendMetrics(mc *MetricCollector, host string) error {
 	client := resty.New()
-	metrics, err := mc.DumpMetrics()
-	if err != nil {
-		return fmt.Errorf("error dumping metrics: %s", err)
+	metrics, errDump := mc.DumpMetrics()
+	if errDump != nil {
+		return fmt.Errorf("error dumping metrics: %w", errDump)
 	}
 	url := "http://{host}/update/{type}/{name}/{value}"
 	for name, value := range metrics.GaugeMetrics {
