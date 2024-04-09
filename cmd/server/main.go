@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -34,7 +35,10 @@ func MetricsRouter(ms *storage.MemStorage) chi.Router {
 func main() {
 	ms := storage.NewMemStorage()
 	r := MetricsRouter(ms)
-	err := http.ListenAndServe(`:8080`, r)
+	sf := new(ServerFlags)
+	ParseFlags(sf)
+	fmt.Println(sf.address)
+	err := http.ListenAndServe(*sf.address, r)
 	if err != nil {
 		panic(err)
 	}
