@@ -10,19 +10,16 @@ import (
 
 	"github.com/GaryShem/ya-metrics.git/internal/server"
 	"github.com/GaryShem/ya-metrics.git/internal/shared/storage"
-	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/metrics"
 )
 
 func TestRunAgent(t *testing.T) {
 	reportInteral := 2
 	pollInterval := 1
-
-	ts := httptest.NewServer(server.MetricsRouter(
-		&storage.MemStorage{
-			GaugeMetrics:   map[string]*metrics.Gauge{},
-			CounterMetrics: map[string]*metrics.Counter{},
-		},
-	))
+	router, err := server.MetricsRouter(storage.NewMemStorage())
+	if err != nil {
+		t.Fatal(err)
+	}
+	ts := httptest.NewServer(router)
 	defer ts.Close()
 	serverURLSlice := strings.Split(ts.URL, ":")
 	serverPort := serverURLSlice[len(serverURLSlice)-1]
