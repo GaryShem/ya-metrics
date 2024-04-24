@@ -11,6 +11,6 @@ func main() {
 	ParseFlags(af)
 	err := agent.RunAgent(af, false)
 	if err != nil {
-		log.Fatal("agent closed with error")
+		log.Fatalf("agent closed with error %v", err)
 	}
 }

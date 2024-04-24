@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/go-resty/resty/v2"
+
+	"github.com/GaryShem/ya-metrics.git/internal/shared/logging"
 )
 
 type AgentFlags struct {
@@ -22,10 +24,12 @@ func collectMetrics(mc *MetricCollector) error {
 func sendMetrics(mc *MetricCollector, host string) error {
 	client := resty.New()
 	metrics, errDump := mc.DumpMetrics()
+	logging.Log.Infoln(host)
 	if errDump != nil {
 		return fmt.Errorf("error dumping metrics: %w", errDump)
 	}
 	url := "http://{host}/update"
+
 	for _, m := range metrics {
 		mJSON, err := json.Marshal(m)
 		if err != nil {
@@ -44,8 +48,11 @@ func sendMetrics(mc *MetricCollector, host string) error {
 }
 
 func RunAgent(af *AgentFlags, sendOnce bool) error {
+	if err := logging.InitializeZapLogger("Info"); err != nil {
+		return fmt.Errorf("error initializing logger: %w", err)
+	}
 	metrics := NewMetricCollector(SupportedRuntimeMetrics())
-	log.Printf("Server Address: %v\n", *af.Address)
+	logging.Log.Infoln("Server Address:", *af.Address)
 
 	pollInterval := time.Second * time.Duration(*af.PollInterval)
 	reportInterval := time.Second * time.Duration(*af.ReportInterval)
@@ -55,12 +62,12 @@ func RunAgent(af *AgentFlags, sendOnce bool) error {
 	log.Println("Starting metrics collection")
 	for {
 		sleepTime := min(dumpDelay, collectionDelay)
-		log.Printf("Sleep %v\n", sleepTime)
+		logging.Log.Infoln("Sleep", sleepTime)
 		time.Sleep(sleepTime)
 		dumpDelay -= sleepTime
 		collectionDelay -= sleepTime
 		if collectionDelay <= 0 {
-			log.Println("collecting metrics")
+			logging.Log.Infoln("collecting metrics")
 			collectionDelay += pollInterval
 			if err := collectMetrics(metrics); err != nil {
 				return err
@@ -68,7 +75,7 @@ func RunAgent(af *AgentFlags, sendOnce bool) error {
 		}
 		if dumpDelay <= 0 {
 			dumpDelay += reportInterval
-			log.Println("sending metrics")
+			logging.Log.Infoln("sending metrics")
 			if err := sendMetrics(metrics, *af.Address); err != nil {
 				return err
 			}

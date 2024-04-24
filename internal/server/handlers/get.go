@@ -78,12 +78,14 @@ func (h *RepoHandler) GetMetricJSON(w http.ResponseWriter, r *http.Request) {
 	if err := dec.Decode(&metric); err != nil {
 		logging.Log.Debug("error decoding request json", zap.Error(err))
 		http.Error(w, "error decoding request json", http.StatusBadRequest)
+		return
 	}
 
 	// get metric from repository
-	if err := h.repo.GetMetric(metric); err != nil {
-		logging.Log.Debug("error getting metric metric", zap.Error(err))
-		http.Error(w, fmt.Sprintf("error updating metric, %v", err), http.StatusNotFound)
+	err := h.repo.GetMetric(metric)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
 	}
 
 	// serialize updated metric structure
@@ -91,8 +93,12 @@ func (h *RepoHandler) GetMetricJSON(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		logging.Log.Debug("error marshaling response", zap.Error(err))
 		http.Error(w, "error marshaling response", http.StatusInternalServerError)
+		return
 	}
+
+	w.Header().Set("Content-Type", "application/json")
 	if _, err = w.Write(response); err != nil {
 		http.Error(w, "could not write GetMetricJSON response, contact server admins", http.StatusInternalServerError)
+		return
 	}
 }

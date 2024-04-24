@@ -67,7 +67,8 @@ func (s *MetricHandlerSuite) TestSetCounterJSON() {
 }
 
 func (s *MetricHandlerSuite) TestSetGaugeJSON() {
-	reqURL := "/update/"
+	updateURL := "/update/"
+	getURL := "/value/"
 	client := resty.New()
 	value := 3.14
 	m := metrics.Metrics{
@@ -78,13 +79,24 @@ func (s *MetricHandlerSuite) TestSetGaugeJSON() {
 	}
 	mJSON, err := json.Marshal(m)
 	s.Require().NoError(err)
-	url := s.server.URL + reqURL
+	url := s.server.URL + updateURL
 
 	response, err := client.R().
 		SetHeader("Content-Type", "application/json").SetBody(mJSON).Post(url)
 	s.Require().NoError(err)
 	s.Require().Equal(http.StatusOK, response.StatusCode())
+	s.Require().Equal("application/json", response.Header().Get("Content-Type"))
 	s.Equal(string(mJSON), string(response.Body()))
+	m.Value = nil
+
+	url = s.server.URL + getURL
+	response, err = client.R().
+		SetHeader("Content-Type", "application/json").SetBody(mJSON).Post(url)
+	s.Require().NoError(err)
+	expectedStr := string(mJSON)
+	gotStr := string(response.Body())
+	s.Equal(expectedStr, gotStr)
+
 }
 
 func (s *MetricHandlerSuite) TestSetGaugeJSONIncorrectContentType() {

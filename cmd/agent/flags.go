@@ -16,8 +16,8 @@ type envConfig struct {
 
 func ParseFlags(af *agent.AgentFlags) {
 	af.Address = flag.String("a", "localhost:8080", "server address:port")
-	af.ReportInterval = flag.Int("r", 10, "metric reporting interval, seconds int")
-	af.PollInterval = flag.Int("p", 2, "metric polling interval, seconds int")
+	af.ReportInterval = flag.Int("r", 2, "metric reporting interval, seconds int")
+	af.PollInterval = flag.Int("p", 1, "metric polling interval, seconds int")
 	flag.Parse()
 
 	var ec envConfig
