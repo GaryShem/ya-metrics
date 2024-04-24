@@ -1,10 +1,9 @@
 package agent
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
-	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/go-resty/resty/v2"
@@ -26,37 +25,19 @@ func sendMetrics(mc *MetricCollector, host string) error {
 	if errDump != nil {
 		return fmt.Errorf("error dumping metrics: %w", errDump)
 	}
-	url := "http://{host}/update/{type}/{name}/{value}"
-	for name, value := range metrics.GaugeMetrics {
-		request := client.R().SetPathParams(map[string]string{
-			"host":  host,
-			"type":  "gauge",
-			"name":  name,
-			"value": strconv.FormatFloat(value.Value, 'f', 6, 64),
-		})
-		res, err := request.Post(url)
+	url := "http://{host}/update"
+	for _, m := range metrics {
+		mJSON, err := json.Marshal(m)
 		if err != nil {
-			return fmt.Errorf("could not send metrics: %w", err)
+			return fmt.Errorf("error marshalling metric: %w", err)
 		}
-		if res.StatusCode() != http.StatusOK {
-			return fmt.Errorf("could not send metrics, return code: %v",
-				res.StatusCode())
-		}
-	}
-	for name, value := range metrics.CounterMetrics {
-		request := client.R().SetPathParams(map[string]string{
-			"host":  host,
-			"type":  "counter",
-			"name":  name,
-			"value": strconv.FormatInt(value.Value, 10),
-		})
-		res, err := request.Post(url)
+		res, err := client.R().SetPathParam("host", host).
+			SetHeader("Content-Type", "application/json").SetBody(mJSON).Post(url)
 		if err != nil {
-			return fmt.Errorf("could not send metrics: %w", err)
+			return fmt.Errorf("error sending metric: %w", err)
 		}
-		if res.StatusCode() != http.StatusOK {
-			return fmt.Errorf("could not send metrics, return code: %v",
-				res.StatusCode())
+		if res.StatusCode() != 200 {
+			return fmt.Errorf("error sending metric: %d %s", res.StatusCode(), res.String())
 		}
 	}
 	return nil

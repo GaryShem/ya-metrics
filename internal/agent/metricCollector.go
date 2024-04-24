@@ -6,6 +6,8 @@ import (
 	"runtime"
 
 	"github.com/GaryShem/ya-metrics.git/internal/shared/storage"
+	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/memStorage"
+	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/metrics"
 )
 
 func SupportedRuntimeMetrics() []string {
@@ -104,7 +106,7 @@ func NewMetricCollector(gaugeMetrics []string) *MetricCollector {
 	tmpGaugeMetrics := make([]string, len(gaugeMetrics))
 	copy(tmpGaugeMetrics, gaugeMetrics)
 	return &MetricCollector{
-		Storage:                 storage.NewMemStorage(),
+		Storage:                 memStorage.NewMemStorage(),
 		RuntimeGaugeMetricNames: tmpGaugeMetrics,
 	}
 }
@@ -124,13 +126,23 @@ func (m *MetricCollector) CollectMetrics() error {
 	return nil
 }
 
-func (m *MetricCollector) DumpMetrics() (*storage.MemStorage, error) {
-	ms := storage.NewMemStorage()
-	for name, gaugeValue := range m.Storage.GetGauges() {
-		ms.UpdateGauge(name, gaugeValue.Value)
+func (m *MetricCollector) DumpMetrics() ([]*metrics.Metrics, error) {
+	result := make([]*metrics.Metrics, 0)
+	for _, value := range m.Storage.GetGauges() {
+		result = append(result, &metrics.Metrics{
+			ID:    value.Name,
+			MType: value.Type,
+			Delta: nil,
+			Value: &value.Value,
+		})
 	}
-	for name, counterValue := range m.Storage.GetCounters() {
-		ms.UpdateCounter(name, counterValue.Value)
+	for _, value := range m.Storage.GetCounters() {
+		result = append(result, &metrics.Metrics{
+			ID:    value.Name,
+			MType: value.Type,
+			Delta: &value.Value,
+			Value: nil,
+		})
 	}
 
 	err := m.Storage.ResetCounter("PollCount")
@@ -138,5 +150,5 @@ func (m *MetricCollector) DumpMetrics() (*storage.MemStorage, error) {
 		return nil, err
 	}
 
-	return ms, nil
+	return result, nil
 }

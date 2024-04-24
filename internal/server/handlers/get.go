@@ -6,14 +6,18 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
+
+	"github.com/GaryShem/ya-metrics.git/internal/shared/logging"
+	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/metrics"
 )
 
 func (h *RepoHandler) GetGauge(w http.ResponseWriter, r *http.Request) {
-	metricType := "gauge"
+	metricType := metrics.TypeGauge
 	// get metric name
 	metricName := chi.URLParam(r, "metricName")
 	if metricName == "" {
-		http.Error(w, fmt.Sprintf("%v %v metric name is empty", metricType, metricName), http.StatusNotFound)
+		http.Error(w, fmt.Sprintf("%v metric type: %v", metricType, metrics.ErrInvalidMetricID), http.StatusNotFound)
 		return
 	}
 	var valueBytes []byte
@@ -30,11 +34,11 @@ func (h *RepoHandler) GetGauge(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *RepoHandler) GetCounter(w http.ResponseWriter, r *http.Request) {
-	metricType := "counter"
+	metricType := metrics.TypeCounter
 	// get metric name
 	metricName := chi.URLParam(r, "metricName")
 	if metricName == "" {
-		http.Error(w, fmt.Sprintf("%v %v metric name is empty", metricType, metricName), http.StatusNotFound)
+		http.Error(w, fmt.Sprintf("%v metric type: %v", metricType, metrics.ErrInvalidMetricID), http.StatusNotFound)
 		return
 	}
 	var valueBytes []byte
@@ -58,5 +62,37 @@ func (h *RepoHandler) ListMetrics(w http.ResponseWriter, _ *http.Request) {
 	if _, err = w.Write(jsonResponse); err != nil {
 		http.Error(w, "could not write response, contact server admins", http.StatusInternalServerError)
 		return
+	}
+}
+
+func (h *RepoHandler) GetMetricJSON(w http.ResponseWriter, r *http.Request) {
+	// make sure metrics are passed via POST
+	if r.Method != http.MethodPost {
+		http.Error(w, "only POST is accepted", http.StatusBadRequest)
+		return
+	}
+
+	// deserialize request
+	metric := &metrics.Metrics{}
+	dec := json.NewDecoder(r.Body)
+	if err := dec.Decode(&metric); err != nil {
+		logging.Log.Debug("error decoding request json", zap.Error(err))
+		http.Error(w, "error decoding request json", http.StatusBadRequest)
+	}
+
+	// get metric from repository
+	if err := h.repo.GetMetric(metric); err != nil {
+		logging.Log.Debug("error getting metric metric", zap.Error(err))
+		http.Error(w, fmt.Sprintf("error updating metric, %v", err), http.StatusNotFound)
+	}
+
+	// serialize updated metric structure
+	response, err := json.Marshal(metric)
+	if err != nil {
+		logging.Log.Debug("error marshaling response", zap.Error(err))
+		http.Error(w, "error marshaling response", http.StatusInternalServerError)
+	}
+	if _, err = w.Write(response); err != nil {
+		http.Error(w, "could not write GetMetricJSON response, contact server admins", http.StatusInternalServerError)
 	}
 }
