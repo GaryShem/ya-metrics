@@ -6,7 +6,7 @@ import (
 	"runtime"
 
 	"github.com/GaryShem/ya-metrics.git/internal/shared/storage"
-	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/memStorage"
+	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/memstorage"
 	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/metrics"
 )
 
@@ -106,7 +106,7 @@ func NewMetricCollector(gaugeMetrics []string) *MetricCollector {
 	tmpGaugeMetrics := make([]string, len(gaugeMetrics))
 	copy(tmpGaugeMetrics, gaugeMetrics)
 	return &MetricCollector{
-		Storage:                 memStorage.NewMemStorage(),
+		Storage:                 memstorage.NewMemStorage(),
 		RuntimeGaugeMetricNames: tmpGaugeMetrics,
 	}
 }

@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/memStorage"
+	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/memstorage"
 	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/metrics"
 )
 
@@ -63,7 +63,7 @@ func (s *MetricCollectorSuite) TestCollectingMetrics() {
 
 func (s *MetricCollectorSuite) TestIllegalMetric() {
 	mc := &MetricCollector{
-		Storage: &memStorage.MemStorage{
+		Storage: &memstorage.MemStorage{
 			GaugeMetrics: map[string]*metrics.Gauge{
 				"Alloc": metrics.NewGauge("Alloc", 2),
 			},

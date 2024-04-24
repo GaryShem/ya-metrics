@@ -1,4 +1,4 @@
-package memStorage
+package memstorage
 
 import "github.com/GaryShem/ya-metrics.git/internal/shared/storage/metrics"
 

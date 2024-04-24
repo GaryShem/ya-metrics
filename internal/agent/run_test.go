@@ -9,13 +9,13 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/GaryShem/ya-metrics.git/internal/server/handlers"
-	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/memStorage"
+	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/memstorage"
 )
 
 func TestRunAgent(t *testing.T) {
 	reportInteral := 2
 	pollInterval := 1
-	router, err := handlers.MetricsRouter(memStorage.NewMemStorage())
+	router, err := handlers.MetricsRouter(memstorage.NewMemStorage())
 	if err != nil {
 		t.Fatal(err)
 	}
