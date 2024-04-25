@@ -52,7 +52,7 @@ func TestAgentSuite(t *testing.T) {
 }
 
 func (s *AgentSuite) TestAgentMetrics() {
-	err := RunAgent(s.af, true)
+	err := RunAgent(s.af, true, false)
 	s.Require().NoError(err)
 
 	for _, m := range SupportedRuntimeMetrics() {
