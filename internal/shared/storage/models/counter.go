@@ -1,4 +1,4 @@
-package metrics
+package models
 
 type Counter struct {
 	Type  string `json:"type"`

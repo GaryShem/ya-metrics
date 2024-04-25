@@ -10,7 +10,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/GaryShem/ya-metrics.git/internal/shared/logging"
-	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/metrics"
+	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
 )
 
 func (h *RepoHandler) UpdateGauge(w http.ResponseWriter, r *http.Request) {
@@ -110,7 +110,7 @@ func (h *RepoHandler) UpdateMetricJSON(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// deserialize request
-	metric := &metrics.Metrics{}
+	metric := &models.Metrics{}
 	dec := json.NewDecoder(r.Body)
 	if err := dec.Decode(&metric); err != nil {
 		logging.Log.Debug("error decoding request json", zap.Error(err))

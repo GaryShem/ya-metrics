@@ -1,13 +1,15 @@
 package memstorage
 
-import "github.com/GaryShem/ya-metrics.git/internal/shared/storage/metrics"
+import (
+	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
+)
 
-func (ms *MemStorage) UpdateMetric(m *metrics.Metrics) error {
+func (ms *MemStorage) UpdateMetric(m *models.Metrics) error {
 	if err := m.ValidateUpdate(); err != nil {
 		return err
 	}
-	switch metrics.MetricType(m.MType) {
-	case metrics.TypeGauge:
+	switch models.MetricType(m.MType) {
+	case models.TypeGauge:
 		ms.UpdateGauge(m.ID, *m.Value)
 		v, err := ms.GetGauge(m.ID)
 		if err != nil {
@@ -15,7 +17,7 @@ func (ms *MemStorage) UpdateMetric(m *metrics.Metrics) error {
 		}
 		m.Value = &v.Value
 		return nil
-	case metrics.TypeCounter:
+	case models.TypeCounter:
 		ms.UpdateCounter(m.ID, *m.Delta)
 		v, err := ms.GetCounter(m.ID)
 		if err != nil {
@@ -24,23 +26,23 @@ func (ms *MemStorage) UpdateMetric(m *metrics.Metrics) error {
 		m.Delta = &v.Value
 		return nil
 	default:
-		return metrics.ErrInvalidMetricType
+		return models.ErrInvalidMetricType
 	}
 }
 
-func (ms *MemStorage) GetMetric(m *metrics.Metrics) error {
+func (ms *MemStorage) GetMetric(m *models.Metrics) error {
 	if err := m.ValidateGet(); err != nil {
 		return err
 	}
-	switch metrics.MetricType(m.MType) {
-	case metrics.TypeGauge:
+	switch models.MetricType(m.MType) {
+	case models.TypeGauge:
 		v, err := ms.GetGauge(m.ID)
 		if err != nil {
 			return err
 		}
 		m.Value = &v.Value
 		return nil
-	case metrics.TypeCounter:
+	case models.TypeCounter:
 		v, err := ms.GetCounter(m.ID)
 		if err != nil {
 			return err
@@ -48,6 +50,6 @@ func (ms *MemStorage) GetMetric(m *metrics.Metrics) error {
 		m.Delta = &v.Value
 		return nil
 	default:
-		return metrics.ErrInvalidMetricType
+		return models.ErrInvalidMetricType
 	}
 }

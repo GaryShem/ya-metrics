@@ -5,9 +5,8 @@ import (
 	"math/rand"
 	"runtime"
 
-	"github.com/GaryShem/ya-metrics.git/internal/shared/storage"
 	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/memstorage"
-	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/metrics"
+	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
 )
 
 func SupportedRuntimeMetrics() []string {
@@ -98,7 +97,7 @@ func Getter(m *runtime.MemStats, metricName string) (float64, error) {
 }
 
 type MetricCollector struct {
-	Storage                 storage.Repository
+	Storage                 models.Repository
 	RuntimeGaugeMetricNames []string
 }
 
@@ -126,10 +125,10 @@ func (m *MetricCollector) CollectMetrics() error {
 	return nil
 }
 
-func (m *MetricCollector) DumpMetrics() ([]*metrics.Metrics, error) {
-	result := make([]*metrics.Metrics, 0)
+func (m *MetricCollector) DumpMetrics() ([]*models.Metrics, error) {
+	result := make([]*models.Metrics, 0)
 	for _, value := range m.Storage.GetGauges() {
-		result = append(result, &metrics.Metrics{
+		result = append(result, &models.Metrics{
 			ID:    value.Name,
 			MType: value.Type,
 			Delta: nil,
@@ -137,7 +136,7 @@ func (m *MetricCollector) DumpMetrics() ([]*metrics.Metrics, error) {
 		})
 	}
 	for _, value := range m.Storage.GetCounters() {
-		result = append(result, &metrics.Metrics{
+		result = append(result, &models.Metrics{
 			ID:    value.Name,
 			MType: value.Type,
 			Delta: &value.Value,

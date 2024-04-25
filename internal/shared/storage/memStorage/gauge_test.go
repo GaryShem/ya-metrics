@@ -5,13 +5,12 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	"github.com/GaryShem/ya-metrics.git/internal/shared/storage"
-	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/metrics"
+	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
 )
 
 type MemStorageGaugeTestSuite struct {
 	suite.Suite
-	repo storage.Repository
+	repo models.Repository
 }
 
 func (s *MemStorageGaugeTestSuite) SetupSuite() {
@@ -23,9 +22,9 @@ func TestMemStorageGaugeTestSuite(t *testing.T) {
 }
 
 func (s *MemStorageGaugeTestSuite) TestGauge() {
-	gauges := []*metrics.Gauge{
-		metrics.NewGauge("foo", 3.14),
-		metrics.NewGauge("foo", 4.14),
+	gauges := []*models.Gauge{
+		models.NewGauge("foo", 3.14),
+		models.NewGauge("foo", 4.14),
 	}
 	for _, gauge := range gauges {
 		s.repo.UpdateGauge(gauge.Name, gauge.Value)
@@ -39,9 +38,9 @@ func (s *MemStorageGaugeTestSuite) TestGauge() {
 }
 
 func (s *MemStorageCounterTestSuite) TestGauges() {
-	gauges := map[string]*metrics.Gauge{
-		"a": metrics.NewGauge("a", 3),
-		"b": metrics.NewGauge("b", 1),
+	gauges := map[string]*models.Gauge{
+		"a": models.NewGauge("a", 3),
+		"b": models.NewGauge("b", 1),
 	}
 	for _, g := range gauges {
 		s.repo.UpdateGauge(g.Name, g.Value)

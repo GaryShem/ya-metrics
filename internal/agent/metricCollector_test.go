@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/memstorage"
-	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/metrics"
+	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
 )
 
 type MetricCollectorSuite struct {
@@ -64,11 +64,11 @@ func (s *MetricCollectorSuite) TestCollectingMetrics() {
 func (s *MetricCollectorSuite) TestIllegalMetric() {
 	mc := &MetricCollector{
 		Storage: &memstorage.MemStorage{
-			GaugeMetrics: map[string]*metrics.Gauge{
-				"Alloc": metrics.NewGauge("Alloc", 2),
+			GaugeMetrics: map[string]*models.Gauge{
+				"Alloc": models.NewGauge("Alloc", 2),
 			},
-			CounterMetrics: map[string]*metrics.Counter{
-				"PollCount": metrics.NewCounter("PollCount", 1),
+			CounterMetrics: map[string]*models.Counter{
+				"PollCount": models.NewCounter("PollCount", 1),
 			},
 		},
 		RuntimeGaugeMetricNames: []string{"Alloc"},
@@ -79,16 +79,16 @@ func (s *MetricCollectorSuite) TestIllegalMetric() {
 	s.Require().NoError(err)
 	allocValue := float64(2)
 	pollCount := int64(1)
-	want := []*metrics.Metrics{
-		&metrics.Metrics{
+	want := []*models.Metrics{
+		&models.Metrics{
 			ID:    "Alloc",
-			MType: string(metrics.TypeGauge),
+			MType: string(models.TypeGauge),
 			Delta: nil,
 			Value: &allocValue,
 		},
-		&metrics.Metrics{
+		&models.Metrics{
 			ID:    "PollCount",
-			MType: string(metrics.TypeCounter),
+			MType: string(models.TypeCounter),
 			Delta: &pollCount,
 			Value: nil,
 		},

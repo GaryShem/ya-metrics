@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/metrics"
+	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
 )
 
 func TestNewMemStorage(t *testing.T) {
@@ -16,8 +16,8 @@ func TestNewMemStorage(t *testing.T) {
 		{
 			name: "Test New Mem Storage",
 			want: &MemStorage{
-				GaugeMetrics:   map[string]*metrics.Gauge{},
-				CounterMetrics: map[string]*metrics.Counter{},
+				GaugeMetrics:   map[string]*models.Gauge{},
+				CounterMetrics: map[string]*models.Counter{},
 			},
 		},
 	}
@@ -30,23 +30,23 @@ func TestNewMemStorage(t *testing.T) {
 
 func TestMemStorage_GetCounters(t *testing.T) {
 	type fields struct {
-		GaugeMetrics   map[string]*metrics.Gauge
-		CounterMetrics map[string]*metrics.Counter
+		GaugeMetrics   map[string]*models.Gauge
+		CounterMetrics map[string]*models.Counter
 	}
 	tests := []struct {
 		name   string
 		fields fields
-		want   map[string]*metrics.Counter
+		want   map[string]*models.Counter
 	}{
 		{
 			name: "Get Counters Test",
 			fields: fields{
-				GaugeMetrics: map[string]*metrics.Gauge{},
-				CounterMetrics: map[string]*metrics.Counter{
-					"foo": metrics.NewCounter("foo", 42),
+				GaugeMetrics: map[string]*models.Gauge{},
+				CounterMetrics: map[string]*models.Counter{
+					"foo": models.NewCounter("foo", 42),
 				},
 			},
-			want: map[string]*metrics.Counter{"foo": metrics.NewCounter("foo", 42)},
+			want: map[string]*models.Counter{"foo": models.NewCounter("foo", 42)},
 		},
 	}
 	for _, tt := range tests {
@@ -62,23 +62,23 @@ func TestMemStorage_GetCounters(t *testing.T) {
 
 func TestMemStorage_GetGauges(t *testing.T) {
 	type fields struct {
-		GaugeMetrics   map[string]*metrics.Gauge
-		CounterMetrics map[string]*metrics.Counter
+		GaugeMetrics   map[string]*models.Gauge
+		CounterMetrics map[string]*models.Counter
 	}
 	tests := []struct {
 		name   string
 		fields fields
-		want   map[string]*metrics.Gauge
+		want   map[string]*models.Gauge
 	}{
 		{
 			name: "Get Counters Test",
 			fields: fields{
-				GaugeMetrics: map[string]*metrics.Gauge{
-					"foo": metrics.NewGauge("foo", 42),
+				GaugeMetrics: map[string]*models.Gauge{
+					"foo": models.NewGauge("foo", 42),
 				},
-				CounterMetrics: map[string]*metrics.Counter{},
+				CounterMetrics: map[string]*models.Counter{},
 			},
-			want: map[string]*metrics.Gauge{"foo": metrics.NewGauge("foo", 42)},
+			want: map[string]*models.Gauge{"foo": models.NewGauge("foo", 42)},
 		},
 	}
 	for _, tt := range tests {

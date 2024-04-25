@@ -7,10 +7,10 @@ import (
 
 	"github.com/GaryShem/ya-metrics.git/internal/server/middleware"
 	"github.com/GaryShem/ya-metrics.git/internal/shared/logging"
-	"github.com/GaryShem/ya-metrics.git/internal/shared/storage"
+	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
 )
 
-func MetricsRouter(ms storage.Repository) (chi.Router, error) {
+func MetricsRouter(ms models.Repository) (chi.Router, error) {
 	if err := logging.InitializeZapLogger("Info"); err != nil {
 		return nil, err
 	}

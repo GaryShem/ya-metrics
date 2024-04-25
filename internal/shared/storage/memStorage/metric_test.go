@@ -5,13 +5,12 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	"github.com/GaryShem/ya-metrics.git/internal/shared/storage"
-	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/metrics"
+	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
 )
 
 type MemStorageMetricsTestSuite struct {
 	suite.Suite
-	repo storage.Repository
+	repo models.Repository
 }
 
 func (s *MemStorageMetricsTestSuite) BeforeTest(suiteName, testName string) {
@@ -23,54 +22,54 @@ func TestMemStorageTestSuite(t *testing.T) {
 }
 
 func (s *MemStorageMetricsTestSuite) TestUpdateMetricInvalidMetricID() {
-	m := &metrics.Metrics{
+	m := &models.Metrics{
 		ID:    "",
-		MType: string(metrics.TypeCounter),
+		MType: string(models.TypeCounter),
 		Delta: nil,
 		Value: nil,
 	}
 	err := s.repo.UpdateMetric(m)
-	s.Require().ErrorIs(err, metrics.ErrInvalidMetricID)
+	s.Require().ErrorIs(err, models.ErrInvalidMetricID)
 }
 
 func (s *MemStorageMetricsTestSuite) TestUpdateMetricInvalidMetricType() {
-	m := &metrics.Metrics{
+	m := &models.Metrics{
 		ID:    "foo",
 		MType: "bar",
 		Delta: nil,
 		Value: nil,
 	}
 	err := s.repo.UpdateMetric(m)
-	s.Require().ErrorIs(err, metrics.ErrInvalidMetricType)
+	s.Require().ErrorIs(err, models.ErrInvalidMetricType)
 }
 
 func (s *MemStorageMetricsTestSuite) TestUpdateMetricInvalidCounterValue() {
-	m := &metrics.Metrics{
+	m := &models.Metrics{
 		ID:    "foo",
-		MType: string(metrics.TypeCounter),
+		MType: string(models.TypeCounter),
 		Delta: nil,
 		Value: nil,
 	}
 	err := s.repo.UpdateMetric(m)
-	s.Require().ErrorIs(err, metrics.ErrInvalidMetricValue)
+	s.Require().ErrorIs(err, models.ErrInvalidMetricValue)
 }
 
 func (s *MemStorageMetricsTestSuite) TestUpdateMetricInvalidGaugeValue() {
-	m := &metrics.Metrics{
+	m := &models.Metrics{
 		ID:    "foo",
-		MType: string(metrics.TypeGauge),
+		MType: string(models.TypeGauge),
 		Delta: nil,
 		Value: nil,
 	}
 	err := s.repo.UpdateMetric(m)
-	s.Require().ErrorIs(err, metrics.ErrInvalidMetricValue)
+	s.Require().ErrorIs(err, models.ErrInvalidMetricValue)
 }
 
 func (s *MemStorageMetricsTestSuite) TestMetricValidGauge() {
 	value := 3.14
-	m := &metrics.Metrics{
+	m := &models.Metrics{
 		ID:    "foo",
-		MType: string(metrics.TypeGauge),
+		MType: string(models.TypeGauge),
 		Delta: nil,
 		Value: &value,
 	}
@@ -79,9 +78,9 @@ func (s *MemStorageMetricsTestSuite) TestMetricValidGauge() {
 	v, err := s.repo.GetGauge("foo")
 	s.Require().NoError(err)
 	s.InEpsilon(v.Value, value, 0.001)
-	m2 := &metrics.Metrics{
+	m2 := &models.Metrics{
 		ID:    "foo",
-		MType: string(metrics.TypeGauge),
+		MType: string(models.TypeGauge),
 		Delta: nil,
 		Value: nil,
 	}
@@ -92,9 +91,9 @@ func (s *MemStorageMetricsTestSuite) TestMetricValidGauge() {
 
 func (s *MemStorageMetricsTestSuite) TestMetricValidCounter() {
 	value := int64(42)
-	m := &metrics.Metrics{
+	m := &models.Metrics{
 		ID:    "foo",
-		MType: string(metrics.TypeCounter),
+		MType: string(models.TypeCounter),
 		Delta: &value,
 		Value: nil,
 	}
@@ -104,9 +103,9 @@ func (s *MemStorageMetricsTestSuite) TestMetricValidCounter() {
 	s.Require().NoError(err)
 	s.Equal(v.Value, value)
 
-	m2 := &metrics.Metrics{
+	m2 := &models.Metrics{
 		ID:    "foo",
-		MType: string(metrics.TypeCounter),
+		MType: string(models.TypeCounter),
 		Delta: nil,
 		Value: nil,
 	}

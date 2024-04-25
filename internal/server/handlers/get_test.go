@@ -8,7 +8,7 @@ import (
 	"github.com/go-resty/resty/v2"
 
 	"github.com/GaryShem/ya-metrics.git/internal/shared/logging"
-	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/metrics"
+	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
 )
 
 func (s *MetricHandlerSuite) TestGetGauge() {
@@ -74,8 +74,8 @@ func (s *MetricHandlerSuite) TestGetCounters() {
 	s.Require().NoError(err)
 	s.Require().Equal(http.StatusOK, response.StatusCode())
 	rs := struct {
-		GaugeMetrics   map[string]*metrics.Gauge   `json:"gaugeMetrics"`
-		CounterMetrics map[string]*metrics.Counter `json:"counterMetrics"`
+		GaugeMetrics   map[string]*models.Gauge   `json:"gaugeMetrics"`
+		CounterMetrics map[string]*models.Counter `json:"counterMetrics"`
 	}{}
 	responseString := string(response.Body())
 	logging.Log.Infoln(responseString)
@@ -92,9 +92,9 @@ func (s *MetricHandlerSuite) TestGetCounterMetricJSON() {
 	value := int64(42)
 	s.repo.UpdateCounter("foo", value)
 
-	m := metrics.Metrics{
+	m := models.Metrics{
 		ID:    "foo",
-		MType: string(metrics.TypeCounter),
+		MType: string(models.TypeCounter),
 		Delta: nil,
 		Value: nil,
 	}
@@ -107,7 +107,7 @@ func (s *MetricHandlerSuite) TestGetCounterMetricJSON() {
 	response, err := client.R().SetHeader("Content-Type", "application/json").SetBody(mJSON).Post(url)
 	s.Require().NoError(err)
 	s.Require().Equal(http.StatusOK, response.StatusCode())
-	responseMetric := metrics.Metrics{}
+	responseMetric := models.Metrics{}
 	err = json.Unmarshal(response.Body(), &responseMetric)
 	s.Require().NoError(err)
 	s.Assert().EqualValues(value, *responseMetric.Delta)
@@ -116,9 +116,9 @@ func (s *MetricHandlerSuite) TestGetCounterMetricJSON() {
 }
 
 func (s *MetricHandlerSuite) TestGetCounterMetricJSONInvalid() {
-	m := metrics.Metrics{
+	m := models.Metrics{
 		ID:    "foo",
-		MType: string(metrics.TypeCounter),
+		MType: string(models.TypeCounter),
 		Delta: nil,
 		Value: nil,
 	}
@@ -137,9 +137,9 @@ func (s *MetricHandlerSuite) TestGetGaugeMetricJSON() {
 	value := 3.14
 	s.repo.UpdateGauge("foo", value)
 
-	m := metrics.Metrics{
+	m := models.Metrics{
 		ID:    "foo",
-		MType: string(metrics.TypeGauge),
+		MType: string(models.TypeGauge),
 		Delta: nil,
 		Value: nil,
 	}
@@ -152,7 +152,7 @@ func (s *MetricHandlerSuite) TestGetGaugeMetricJSON() {
 	response, err := client.R().SetHeader("Content-Type", "application/json").SetBody(mJSON).Post(url)
 	s.Require().NoError(err)
 	s.Require().Equal(http.StatusOK, response.StatusCode())
-	responseMetric := metrics.Metrics{}
+	responseMetric := models.Metrics{}
 	err = json.Unmarshal(response.Body(), &responseMetric)
 	s.Require().NoError(err)
 	s.Assert().EqualValues(value, *responseMetric.Value)
@@ -161,9 +161,9 @@ func (s *MetricHandlerSuite) TestGetGaugeMetricJSON() {
 }
 
 func (s *MetricHandlerSuite) TestGetGaugeMetricJSONInvalid() {
-	m := metrics.Metrics{
+	m := models.Metrics{
 		ID:    "foo",
-		MType: string(metrics.TypeGauge),
+		MType: string(models.TypeGauge),
 		Delta: nil,
 		Value: nil,
 	}

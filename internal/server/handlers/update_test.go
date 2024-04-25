@@ -6,7 +6,7 @@ import (
 
 	"github.com/go-resty/resty/v2"
 
-	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/metrics"
+	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
 )
 
 func (s *MetricHandlerSuite) TestSetGauge() {
@@ -49,9 +49,9 @@ func (s *MetricHandlerSuite) TestSetCounterJSON() {
 	reqURL := "/update/"
 	client := resty.New()
 	value := int64(42)
-	m := metrics.Metrics{
+	m := models.Metrics{
 		ID:    "foo",
-		MType: string(metrics.TypeCounter),
+		MType: string(models.TypeCounter),
 		Delta: &value,
 		Value: nil,
 	}
@@ -71,9 +71,9 @@ func (s *MetricHandlerSuite) TestSetGaugeJSON() {
 	getURL := "/value/"
 	client := resty.New()
 	value := 3.14
-	m := metrics.Metrics{
+	m := models.Metrics{
 		ID:    "foo",
-		MType: string(metrics.TypeGauge),
+		MType: string(models.TypeGauge),
 		Delta: nil,
 		Value: &value,
 	}
@@ -103,9 +103,9 @@ func (s *MetricHandlerSuite) TestSetGaugeJSONIncorrectContentType() {
 	reqURL := "/update/"
 	client := resty.New()
 	value := 3.14
-	m := metrics.Metrics{
+	m := models.Metrics{
 		ID:    "foo",
-		MType: string(metrics.TypeGauge),
+		MType: string(models.TypeGauge),
 		Delta: nil,
 		Value: &value,
 	}
