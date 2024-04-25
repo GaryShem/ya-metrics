@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
+	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/memorystorage"
 	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
 )
 
@@ -16,7 +17,7 @@ type MetricHandlerSuite struct {
 }
 
 func (s *MetricHandlerSuite) BeforeTest(suiteName, testName string) {
-	s.repo = mem_storage.NewMemStorage()
+	s.repo = memorystorage.NewMemStorage()
 	router, err := MetricsRouter(s.repo)
 	if err != nil {
 		panic(err)

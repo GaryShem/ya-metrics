@@ -9,6 +9,7 @@ import (
 
 	"github.com/GaryShem/ya-metrics.git/internal/server/handlers"
 	"github.com/GaryShem/ya-metrics.git/internal/shared/logging"
+	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/memorystorage"
 	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
 )
 
@@ -20,7 +21,7 @@ type AgentSuite struct {
 }
 
 func (s *AgentSuite) SetupSuite() {
-	s.repo = mem_storage.NewMemStorage()
+	s.repo = memorystorage.NewMemStorage()
 	router, err := handlers.MetricsRouter(s.repo)
 	if err != nil {
 		panic(err)

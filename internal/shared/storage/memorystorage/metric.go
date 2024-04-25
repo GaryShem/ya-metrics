@@ -1,4 +1,4 @@
-package mem_storage
+package memorystorage
 
 import (
 	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
