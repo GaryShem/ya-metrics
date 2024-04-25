@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"time"
 
 	"github.com/go-resty/resty/v2"
@@ -35,12 +36,13 @@ func sendMetrics(mc *MetricCollector, host string) error {
 		if err != nil {
 			return fmt.Errorf("error marshalling metric: %w", err)
 		}
-		res, err := client.R().SetPathParam("host", host).
-			SetHeader("Content-Type", "application/json").SetBody(mJSON).Post(url)
+		request := client.R().SetPathParam("host", host).
+			SetHeader("Content-Type", "application/json").SetBody(mJSON)
+		res, err := request.Post(url)
 		if err != nil {
 			return fmt.Errorf("error sending metric: %w", err)
 		}
-		if res.StatusCode() != 200 {
+		if res.StatusCode() != http.StatusOK {
 			return fmt.Errorf("error sending metric: %d %s", res.StatusCode(), res.String())
 		}
 	}
@@ -51,6 +53,8 @@ func RunAgent(af *AgentFlags, sendOnce bool) error {
 	if err := logging.InitializeZapLogger("Info"); err != nil {
 		return fmt.Errorf("error initializing logger: %w", err)
 	}
+	logging.Log.Infoln("agent started")
+	//log.Fatal("crash agent for science")
 	metrics := NewMetricCollector(SupportedRuntimeMetrics())
 	logging.Log.Infoln("Server Address:", *af.Address)
 

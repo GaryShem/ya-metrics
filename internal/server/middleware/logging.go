@@ -1,8 +1,11 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/GaryShem/ya-metrics.git/internal/shared/logging"
 )
 
 type RequestData struct {
@@ -61,15 +64,15 @@ func RequestLogger(next http.Handler) http.Handler {
 		data := NewRequestData(w, r)
 		next.ServeHTTP(data.writer, r)
 		data.execTime = time.Since(startTime)
-		//logging.Log.Infoln(
-		//	"uri", data.uri,
-		//	"method", data.method,
-		//	"statusCode", data.writer.data.status,
-		//	"size", data.writer.data.size,
-		//	"resLength", data.writer.data.size,
-		//	"execTime", data.execTime,
-		//	fmt.Sprintf("headers %#v", w.Header()),
-		//	"body", data.writer.data.body,
-		//)
+		logging.Log.Infoln(
+			"uri", data.uri,
+			"method", data.method,
+			"statusCode", data.writer.data.status,
+			"size", data.writer.data.size,
+			"resLength", data.writer.data.size,
+			"execTime", data.execTime,
+			fmt.Sprintf("headers %#v", w.Header()),
+			"body", data.writer.data.body,
+		)
 	})
 }
