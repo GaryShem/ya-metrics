@@ -30,6 +30,8 @@ func SupportedRuntimeMetrics() []string {
 		"MSpanSys",
 		"Mallocs",
 		"NextGC",
+		"NumForcedGC",
+		"NumGC",
 		"OtherSys",
 		"PauseTotalNs",
 		"StackInuse",
@@ -80,6 +82,10 @@ func Getter(m *runtime.MemStats, metricName string) (float64, error) {
 		return float64(m.Mallocs), nil
 	case "NextGC":
 		return float64(m.NextGC), nil
+	case "NumForcedGC":
+		return float64(m.NumForcedGC), nil
+	case "NumGC":
+		return float64(m.NumGC), nil
 	case "OtherSys":
 		return float64(m.OtherSys), nil
 	case "PauseTotalNs":

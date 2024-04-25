@@ -40,21 +40,25 @@ func sendMetrics(mc *MetricCollector, host string) error {
 			SetHeader("Content-Type", "application/json").SetBody(mJSON)
 		res, err := request.Post(url)
 		if err != nil {
-			return fmt.Errorf("error sending metric: %w", err)
+			if res != nil {
+				return fmt.Errorf("error sending metric: %w, %d %s", err, res.StatusCode(), res.String())
+			} else {
+				return fmt.Errorf("error sending metric, response is nil: %w", err)
+			}
 		}
 		if res.StatusCode() != http.StatusOK {
+
 			return fmt.Errorf("error sending metric: %d %s", res.StatusCode(), res.String())
 		}
 	}
 	return nil
 }
 
-func RunAgent(af *AgentFlags, sendOnce bool) error {
+func RunAgent(af *AgentFlags, sendOnce bool, ignoreSendError bool) error {
 	if err := logging.InitializeZapLogger("Info"); err != nil {
 		return fmt.Errorf("error initializing logger: %w", err)
 	}
 	logging.Log.Infoln("agent started")
-	//log.Fatal("crash agent for science")
 	metrics := NewMetricCollector(SupportedRuntimeMetrics())
 	logging.Log.Infoln("Server Address:", *af.Address)
 
@@ -81,10 +85,16 @@ func RunAgent(af *AgentFlags, sendOnce bool) error {
 			dumpDelay += reportInterval
 			logging.Log.Infoln("sending metrics")
 			if err := sendMetrics(metrics, *af.Address); err != nil {
-				return err
-			}
-			if sendOnce {
-				break
+				if !ignoreSendError {
+					return err
+				} else {
+					logging.Log.Warn("error sending metrics: ", err)
+				}
+			} else {
+				logging.Log.Infoln("metrics sent successfully")
+				if sendOnce {
+					break
+				}
 			}
 		}
 	}

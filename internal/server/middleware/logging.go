@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
@@ -71,8 +70,6 @@ func RequestLogger(next http.Handler) http.Handler {
 			"size", data.writer.data.size,
 			"resLength", data.writer.data.size,
 			"execTime", data.execTime,
-			fmt.Sprintf("headers %#v", w.Header()),
-			"body", data.writer.data.body,
 		)
 	})
 }
