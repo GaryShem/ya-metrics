@@ -5,7 +5,6 @@ import (
 	"math/rand"
 	"runtime"
 
-	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/memstorage"
 	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
 )
 
@@ -105,7 +104,7 @@ func NewMetricCollector(gaugeMetrics []string) *MetricCollector {
 	tmpGaugeMetrics := make([]string, len(gaugeMetrics))
 	copy(tmpGaugeMetrics, gaugeMetrics)
 	return &MetricCollector{
-		Storage:                 memstorage.NewMemStorage(),
+		Storage:                 mem_storage.NewMemStorage(),
 		RuntimeGaugeMetricNames: tmpGaugeMetrics,
 	}
 }
