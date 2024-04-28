@@ -20,8 +20,39 @@ type AgentFlags struct {
 	PollInterval   *int
 }
 
-func collectMetrics(mc *MetricCollector) error {
-	return mc.CollectMetrics()
+func triggerCollectMetrics(mc *MetricCollector, interval time.Duration, ec chan error) {
+	timer := time.NewTicker(interval)
+	defer timer.Stop()
+	for {
+		<-timer.C
+		err := mc.CollectMetrics()
+		if err != nil {
+			ec <- err
+			return
+		}
+	}
+
+}
+
+func triggerSendMetrics(mc *MetricCollector, host string, sendOnce bool, ignoreSendError bool,
+	gzipRequest bool, interval time.Duration, ec chan error) {
+	timer := time.NewTicker(interval)
+	defer timer.Stop()
+	for {
+		<-timer.C
+		err := sendMetrics(mc, host, gzipRequest)
+		if err != nil {
+			if ignoreSendError {
+				logging.Log.Warnln("Ignore send error:", err)
+				continue
+			}
+			ec <- err
+			return
+		}
+		if sendOnce {
+			ec <- nil
+		}
+	}
 }
 
 func wrapGzipRequest(r *resty.Request, mJSON []byte) error {
@@ -93,38 +124,9 @@ func RunAgent(af *AgentFlags, runtimeMetrics []string, sendOnce bool, ignoreSend
 	pollInterval := time.Second * time.Duration(*af.PollInterval)
 	reportInterval := time.Second * time.Duration(*af.ReportInterval)
 
-	collectionDelay := pollInterval
-	dumpDelay := reportInterval
 	log.Println("Starting metrics collection")
-	for {
-		sleepTime := min(dumpDelay, collectionDelay)
-		logging.Log.Infoln("Sleep", sleepTime)
-		time.Sleep(sleepTime)
-		dumpDelay -= sleepTime
-		collectionDelay -= sleepTime
-		if collectionDelay <= 0 {
-			logging.Log.Infoln("collecting metrics")
-			collectionDelay += pollInterval
-			if err := collectMetrics(metrics); err != nil {
-				return err
-			}
-		}
-		if dumpDelay <= 0 {
-			dumpDelay += reportInterval
-			logging.Log.Infoln("sending metrics")
-			if err := sendMetrics(metrics, *af.Address, gzipRequest); err != nil {
-				if !ignoreSendError {
-					return err
-				} else {
-					logging.Log.Warn("error sending metrics: ", err)
-				}
-			} else {
-				logging.Log.Infoln("metrics sent successfully")
-				if sendOnce {
-					break
-				}
-			}
-		}
-	}
-	return nil
+	c := make(chan error)
+	go triggerCollectMetrics(metrics, pollInterval, c)
+	go triggerSendMetrics(metrics, *af.Address, sendOnce, ignoreSendError, gzipRequest, reportInterval, c)
+	return <-c
 }

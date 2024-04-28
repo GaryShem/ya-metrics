@@ -63,16 +63,11 @@ func (s *MetricCollectorSuite) TestCollectingMetrics() {
 
 func (s *MetricCollectorSuite) TestIllegalMetric() {
 	mc := &MetricCollector{
-		Storage: &memorystorage.MemStorage{
-			GaugeMetrics: map[string]*models.Gauge{
-				"Alloc": models.NewGauge("Alloc", 2),
-			},
-			CounterMetrics: map[string]*models.Counter{
-				"PollCount": models.NewCounter("PollCount", 1),
-			},
-		},
+		Storage:                 memorystorage.NewMemStorage(),
 		RuntimeGaugeMetricNames: []string{"Alloc"},
 	}
+	mc.Storage.UpdateGauge("Alloc", 2)
+	mc.Storage.UpdateCounter("PollCount", 1)
 	dump, err := mc.DumpMetrics()
 	s.Require().NoError(err)
 	dumpJSON, err := json.Marshal(dump)

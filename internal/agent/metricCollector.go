@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"runtime"
+	"sync"
 
 	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/memorystorage"
 	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
@@ -105,6 +106,7 @@ func Getter(m *runtime.MemStats, metricName string) (float64, error) {
 type MetricCollector struct {
 	Storage                 models.Repository
 	RuntimeGaugeMetricNames []string
+	mu                      sync.Mutex
 }
 
 func NewMetricCollector(gaugeMetrics []string) *MetricCollector {
@@ -117,6 +119,8 @@ func NewMetricCollector(gaugeMetrics []string) *MetricCollector {
 }
 
 func (m *MetricCollector) CollectMetrics() error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	var rtm runtime.MemStats
 	runtime.ReadMemStats(&rtm)
 	for _, gaugeMetric := range m.RuntimeGaugeMetricNames {
@@ -132,6 +136,8 @@ func (m *MetricCollector) CollectMetrics() error {
 }
 
 func (m *MetricCollector) DumpMetrics() ([]*models.Metrics, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	result := make([]*models.Metrics, 0)
 	for _, value := range m.Storage.GetGauges() {
 		result = append(result, &models.Metrics{
