@@ -16,6 +16,7 @@ func MetricsRouter(ms models.Repository) (chi.Router, error) {
 	}
 	r := chi.NewRouter()
 	h := NewHandler(ms)
+	r.Use(middleware.RequestGzipper)
 	r.Use(middleware.RequestLogger)
 	r.Route(`/`, func(r chi.Router) {
 		r.Route(`/update`, func(r chi.Router) {

@@ -19,7 +19,8 @@ func main() {
 		"poll interval", *af.PollInterval,
 		"send interval", *af.ReportInterval,
 	)
-	err = agent.RunAgent(af, false, true)
+	err = agent.RunAgent(af, agent.SupportedRuntimeMetrics(),
+		false, true, true)
 	if err != nil {
 		log.Fatalf("agent closed with error %v", err)
 	}
