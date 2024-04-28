@@ -7,6 +7,7 @@ import (
 
 	"github.com/GaryShem/ya-metrics.git/internal/server/handlers"
 	"github.com/GaryShem/ya-metrics.git/internal/server/longterm"
+	"github.com/GaryShem/ya-metrics.git/internal/shared/logging"
 	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/memorystorage"
 )
 
@@ -18,6 +19,9 @@ type ServerFlags struct {
 }
 
 func RunServer(sf *ServerFlags) error {
+	if err := logging.InitializeZapLogger("Info"); err != nil {
+		return err
+	}
 	fs := longterm.NewFileSaver(*sf.FileStoragePath, nil)
 	if sf.Restore != nil && *sf.Restore {
 		err := fs.LoadMetricsFile()

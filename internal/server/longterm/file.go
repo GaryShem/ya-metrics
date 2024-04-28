@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/GaryShem/ya-metrics.git/internal/shared/logging"
 	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/memorystorage"
 )
 
@@ -50,7 +51,9 @@ func (fs *FileSaver) LoadMetricsFile() error {
 	ms := &memorystorage.MemStorage{}
 	j, err := os.ReadFile(fs.filename)
 	if err != nil {
-		return fmt.Errorf("load metrics file: %w", err)
+		logging.Log.Infoln("unable to load metrics file:", err)
+		fs.MS = memorystorage.NewMemStorage()
+		return nil
 	}
 	if err := json.Unmarshal(j, ms); err != nil {
 		return fmt.Errorf("load metrics file: %w", err)
