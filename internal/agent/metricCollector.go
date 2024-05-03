@@ -6,7 +6,6 @@ import (
 	"runtime"
 	"sync"
 
-	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/memorystorage"
 	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
 )
 
@@ -104,7 +103,8 @@ func Getter(m *runtime.MemStats, metricName string) (float64, error) {
 }
 
 type MetricCollector struct {
-	Storage                 models.Repository
+	Gauges                  map[string]float64
+	Counters                map[string]int64
 	RuntimeGaugeMetricNames []string
 	mu                      sync.Mutex
 }
@@ -113,7 +113,8 @@ func NewMetricCollector(gaugeMetrics []string) *MetricCollector {
 	tmpGaugeMetrics := make([]string, len(gaugeMetrics))
 	copy(tmpGaugeMetrics, gaugeMetrics)
 	return &MetricCollector{
-		Storage:                 memorystorage.NewMemStorage(),
+		Gauges:                  make(map[string]float64, len(tmpGaugeMetrics)),
+		Counters:                make(map[string]int64, 1),
 		RuntimeGaugeMetricNames: tmpGaugeMetrics,
 	}
 }
@@ -128,10 +129,10 @@ func (m *MetricCollector) CollectMetrics() error {
 		if err != nil {
 			return fmt.Errorf("could not read metric %s: %w", gaugeMetric, err)
 		}
-		m.Storage.UpdateGauge(gaugeMetric, value)
-		m.Storage.UpdateCounter("PollCount", 1)
+		m.Gauges[gaugeMetric] = value
 	}
-	m.Storage.UpdateGauge("RandomValue", rand.Float64()) //nolint:gosec // do not need cryptography on this
+	m.Counters["PollCount"] += int64(len(m.RuntimeGaugeMetricNames))
+	m.Gauges["RandomValue"] = rand.Float64() //nolint:gosec // do not need cryptography on this
 	return nil
 }
 
@@ -139,27 +140,26 @@ func (m *MetricCollector) DumpMetrics() ([]*models.Metrics, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	result := make([]*models.Metrics, 0)
-	for _, value := range m.Storage.GetGauges() {
+	for id, value := range m.Gauges {
+		metricValue := value
 		result = append(result, &models.Metrics{
-			ID:    value.Name,
-			MType: value.Type,
+			ID:    id,
+			MType: string(models.TypeGauge),
 			Delta: nil,
-			Value: &value.Value,
+			Value: &metricValue,
 		})
 	}
-	for _, value := range m.Storage.GetCounters() {
+	for id, value := range m.Counters {
+		metricValue := value
 		result = append(result, &models.Metrics{
-			ID:    value.Name,
-			MType: value.Type,
-			Delta: &value.Value,
+			ID:    id,
+			MType: string(models.TypeCounter),
+			Delta: &metricValue,
 			Value: nil,
 		})
 	}
 
-	err := m.Storage.ResetCounter("PollCount")
-	if err != nil {
-		return nil, err
-	}
+	m.Counters["PollCount"] = 0
 
 	return result, nil
 }

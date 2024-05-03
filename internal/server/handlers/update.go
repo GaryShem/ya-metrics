@@ -14,11 +14,6 @@ import (
 )
 
 func (h *RepoHandler) UpdateGauge(w http.ResponseWriter, r *http.Request) {
-	// make sure metrics are passed via POST
-	if r.Method != http.MethodPost {
-		http.Error(w, "only POST is accepted", http.StatusBadRequest)
-		return
-	}
 	metricType := "gauge"
 	// get metric name
 	metricName := chi.URLParam(r, "metricName")
@@ -46,11 +41,6 @@ func (h *RepoHandler) UpdateGauge(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *RepoHandler) UpdateCounter(w http.ResponseWriter, r *http.Request) {
-	// make sure metrics are passed via POST
-	if r.Method != http.MethodPost {
-		http.Error(w, "only POST is accepted", http.StatusBadRequest)
-		return
-	}
 	metricType := "counter"
 	// get metric name
 	metricName := chi.URLParam(r, "metricName")

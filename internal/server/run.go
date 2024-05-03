@@ -7,8 +7,8 @@ import (
 
 	"github.com/GaryShem/ya-metrics.git/internal/server/handlers"
 	"github.com/GaryShem/ya-metrics.git/internal/server/longterm"
+	"github.com/GaryShem/ya-metrics.git/internal/server/storage/memorystorage"
 	"github.com/GaryShem/ya-metrics.git/internal/shared/logging"
-	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/memorystorage"
 )
 
 type ServerFlags struct {

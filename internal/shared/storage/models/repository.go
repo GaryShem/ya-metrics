@@ -9,6 +9,4 @@ type Repository interface {
 	GetMetric(m *Metrics) error
 	GetGauges() map[string]*Gauge
 	GetCounters() map[string]*Counter
-
-	ResetCounter(metricName string) error
 }

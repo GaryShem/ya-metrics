@@ -7,18 +7,6 @@ import (
 	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
 )
 
-func (ms *MemStorage) ResetCounter(metricName string) error {
-	ms.mu.Lock()
-	defer ms.mu.Unlock()
-	if counter, ok := ms.CounterMetrics[metricName]; ok {
-		counter.Value = 0
-	} else {
-		return fmt.Errorf("%w: %v", ErrMetricNotFound, metricName)
-	}
-	ms.LastChangeTime = time.Now()
-	return nil
-}
-
 func (ms *MemStorage) GetCounters() map[string]*models.Counter {
 	ms.mu.RLock()
 	defer ms.mu.RUnlock()

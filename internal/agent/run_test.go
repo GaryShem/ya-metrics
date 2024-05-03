@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/GaryShem/ya-metrics.git/internal/server/handlers"
+	"github.com/GaryShem/ya-metrics.git/internal/server/storage/memorystorage"
 	"github.com/GaryShem/ya-metrics.git/internal/shared/logging"
-	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/memorystorage"
 	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
 )
 
@@ -29,7 +29,6 @@ func (s *AgentSuite) SetupSuite() {
 	s.server = httptest.NewServer(router)
 	logging.Log.Infoln("server url:", s.server.URL)
 	serverURLSlice := strings.Split(s.server.URL, ":")
-	//serverIP := serverURLSlice[len(serverURLSlice)-2]
 	serverPort := serverURLSlice[len(serverURLSlice)-1]
 	logging.Log.Infoln(s.server.URL, serverPort)
 	serverAddress, _ := strings.CutPrefix(s.server.URL, "http://")

@@ -31,7 +31,6 @@ func triggerCollectMetrics(mc *MetricCollector, interval time.Duration, ec chan 
 			return
 		}
 	}
-
 }
 
 func triggerSendMetrics(mc *MetricCollector, host string, sendOnce bool, ignoreSendError bool,
@@ -56,16 +55,15 @@ func triggerSendMetrics(mc *MetricCollector, host string, sendOnce bool, ignoreS
 }
 
 func wrapGzipRequest(r *resty.Request, mJSON []byte) error {
-	//copy(bodyCopy, mJSON)
 	var buffer bytes.Buffer
 	writer, err := gzip.NewWriterLevel(&buffer, gzip.BestCompression)
 	if err != nil {
 		return fmt.Errorf("failed init compress writer: %v", err)
 	}
-	if _, err := writer.Write(mJSON); err != nil {
+	if _, err = writer.Write(mJSON); err != nil {
 		return fmt.Errorf("error gzipping metric: %w", err)
 	}
-	if err := writer.Close(); err != nil {
+	if err = writer.Close(); err != nil {
 		return fmt.Errorf("error gzipping metric: %w", err)
 	}
 	bodyBytes := buffer.Bytes()
