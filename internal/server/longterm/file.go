@@ -24,9 +24,6 @@ func NewFileSaver(filename string, ms *memorystorage.MemStorage) *FileSaver {
 }
 
 func (fs *FileSaver) SaveMetricsFile(interval time.Duration) error {
-	if len(fs.filename) < 1 {
-		return nil
-	}
 	if interval == 0 {
 		interval = time.Millisecond * 100
 	}

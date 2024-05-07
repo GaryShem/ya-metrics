@@ -20,7 +20,7 @@ type AgentFlags struct {
 	PollInterval   *int
 }
 
-func triggerCollectMetrics(mc *MetricCollector, interval time.Duration, ec chan error) {
+func CollectMetrics(mc *MetricCollector, interval time.Duration, ec chan error) {
 	timer := time.NewTicker(interval)
 	defer timer.Stop()
 	for {
@@ -33,7 +33,7 @@ func triggerCollectMetrics(mc *MetricCollector, interval time.Duration, ec chan 
 	}
 }
 
-func triggerSendMetrics(mc *MetricCollector, host string, sendOnce bool, ignoreSendError bool,
+func SendMetrics(mc *MetricCollector, host string, sendOnce bool, ignoreSendError bool,
 	gzipRequest bool, interval time.Duration, ec chan error) {
 	timer := time.NewTicker(interval)
 	defer timer.Stop()
@@ -124,7 +124,7 @@ func RunAgent(af *AgentFlags, runtimeMetrics []string, sendOnce bool, ignoreSend
 
 	log.Println("Starting metrics collection")
 	c := make(chan error)
-	go triggerCollectMetrics(metrics, pollInterval, c)
-	go triggerSendMetrics(metrics, *af.Address, sendOnce, ignoreSendError, gzipRequest, reportInterval, c)
+	go CollectMetrics(metrics, pollInterval, c)
+	go SendMetrics(metrics, *af.Address, sendOnce, ignoreSendError, gzipRequest, reportInterval, c)
 	return <-c
 }
