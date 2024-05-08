@@ -1,6 +1,8 @@
 package agent
 
 import (
+	"bytes"
+	gzip "compress/gzip"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -22,7 +24,27 @@ func collectMetrics(mc *MetricCollector) error {
 	return mc.CollectMetrics()
 }
 
-func sendMetrics(mc *MetricCollector, host string) error {
+func wrapGzipRequest(r *resty.Request, mJSON []byte) error {
+	//copy(bodyCopy, mJSON)
+	var buffer bytes.Buffer
+	writer, err := gzip.NewWriterLevel(&buffer, gzip.BestCompression)
+	if err != nil {
+		return fmt.Errorf("failed init compress writer: %v", err)
+	}
+	if _, err := writer.Write(mJSON); err != nil {
+		return fmt.Errorf("error gzipping metric: %w", err)
+	}
+	if err := writer.Close(); err != nil {
+		return fmt.Errorf("error gzipping metric: %w", err)
+	}
+	bodyBytes := buffer.Bytes()
+	r.SetBody(bodyBytes)
+	r.Header.Add("Content-Encoding", "gzip")
+	r.Header.Add("Accept-Encoding", "gzip")
+	return nil
+}
+
+func sendMetrics(mc *MetricCollector, host string, gzipRequest bool) error {
 	client := resty.New()
 	metrics, errDump := mc.DumpMetrics()
 	logging.Log.Infoln(host)
@@ -30,36 +52,42 @@ func sendMetrics(mc *MetricCollector, host string) error {
 		return fmt.Errorf("error dumping metrics: %w", errDump)
 	}
 	url := "http://{host}/update"
-
 	for _, m := range metrics {
 		mJSON, err := json.Marshal(m)
 		if err != nil {
 			return fmt.Errorf("error marshalling metric: %w", err)
 		}
 		request := client.R().SetPathParam("host", host).
-			SetHeader("Content-Type", "application/json").SetBody(mJSON)
+			SetHeader("Content-Type", "application/json")
+		if gzipRequest {
+			err = wrapGzipRequest(request, mJSON)
+			if err != nil {
+				return fmt.Errorf("error gzipping metric: %w", err)
+			}
+		} else {
+			request.SetBody(mJSON)
+		}
 		res, err := request.Post(url)
 		if err != nil {
 			if res != nil {
-				return fmt.Errorf("error sending metric: %w, %d %s", err, res.StatusCode(), res.String())
+				return fmt.Errorf("error sending metric, response is not nil: %w, %d %s", err, res.StatusCode(), res.String())
 			} else {
 				return fmt.Errorf("error sending metric, response is nil: %w", err)
 			}
 		}
 		if res.StatusCode() != http.StatusOK {
-
-			return fmt.Errorf("error sending metric: %d %s", res.StatusCode(), res.String())
+			return fmt.Errorf("status code not 200: %d %s", res.StatusCode(), res.String())
 		}
 	}
 	return nil
 }
 
-func RunAgent(af *AgentFlags, sendOnce bool, ignoreSendError bool) error {
+func RunAgent(af *AgentFlags, runtimeMetrics []string, sendOnce bool, ignoreSendError bool, gzipRequest bool) error {
 	if err := logging.InitializeZapLogger("Info"); err != nil {
 		return fmt.Errorf("error initializing logger: %w", err)
 	}
 	logging.Log.Infoln("agent started")
-	metrics := NewMetricCollector(SupportedRuntimeMetrics())
+	metrics := NewMetricCollector(runtimeMetrics)
 	logging.Log.Infoln("Server Address:", *af.Address)
 
 	pollInterval := time.Second * time.Duration(*af.PollInterval)
@@ -84,7 +112,7 @@ func RunAgent(af *AgentFlags, sendOnce bool, ignoreSendError bool) error {
 		if dumpDelay <= 0 {
 			dumpDelay += reportInterval
 			logging.Log.Infoln("sending metrics")
-			if err := sendMetrics(metrics, *af.Address); err != nil {
+			if err := sendMetrics(metrics, *af.Address, gzipRequest); err != nil {
 				if !ignoreSendError {
 					return err
 				} else {

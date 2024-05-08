@@ -59,6 +59,7 @@ func (h *RepoHandler) ListMetrics(w http.ResponseWriter, _ *http.Request) {
 	if err != nil {
 		http.Error(w, fmt.Sprintf("could not marshal json: %v", err.Error()), http.StatusInternalServerError)
 	}
+	w.Header().Set("Content-Type", "text/html")
 	if _, err = w.Write(jsonResponse); err != nil {
 		http.Error(w, "could not write response, contact server admins", http.StatusInternalServerError)
 		return

@@ -128,7 +128,8 @@ func (s *MetricHandlerSuite) TestGetCounterMetricJSONInvalid() {
 	reqURL := "/value"
 	client := resty.New()
 	url := s.server.URL + reqURL
-	response, err := client.R().SetHeader("Content-Type", "application/json").SetBody(mJSON).Post(url)
+	request := client.R().SetHeader("Content-Type", "application/json").SetBody(mJSON)
+	response, err := request.Post(url)
 	s.Require().NoError(err)
 	s.Require().Equal(http.StatusNotFound, response.StatusCode())
 }

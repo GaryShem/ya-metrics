@@ -52,10 +52,29 @@ func TestAgentSuite(t *testing.T) {
 }
 
 func (s *AgentSuite) TestAgentMetrics() {
-	err := RunAgent(s.af, true, false)
+	err := RunAgent(s.af, SupportedRuntimeMetrics(),
+		true, false, false)
 	s.Require().NoError(err)
 
 	for _, m := range SupportedRuntimeMetrics() {
+		g, err := s.repo.GetGauge(m)
+		s.Require().NoError(err)
+		s.Require().NotNil(g)
+		s.Require().NotEqual(0, g.Value)
+	}
+	pc, err := s.repo.GetCounter("PollCount")
+	s.Require().NoError(err)
+	s.Require().NotNil(pc)
+	s.Require().NotEqual(0, pc.Value)
+}
+
+func (s *AgentSuite) TestAgentGzip() {
+	metrics := []string{"Alloc"}
+	err := RunAgent(s.af, metrics,
+		true, false, true)
+	s.Require().NoError(err)
+
+	for _, m := range metrics {
 		g, err := s.repo.GetGauge(m)
 		s.Require().NoError(err)
 		s.Require().NotNil(g)
