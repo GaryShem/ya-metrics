@@ -1,4 +1,4 @@
-package server
+package handlers
 
 import (
 	"net/http/httptest"
@@ -6,17 +6,18 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	"github.com/GaryShem/ya-metrics.git/internal/shared/storage"
+	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/memorystorage"
+	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
 )
 
 type MetricHandlerSuite struct {
 	suite.Suite
 	server *httptest.Server
-	repo   storage.Repository
+	repo   models.Repository
 }
 
-func (s *MetricHandlerSuite) SetupSuite() {
-	s.repo = storage.NewMemStorage()
+func (s *MetricHandlerSuite) BeforeTest(suiteName, testName string) {
+	s.repo = memorystorage.NewMemStorage()
 	router, err := MetricsRouter(s.repo)
 	if err != nil {
 		panic(err)

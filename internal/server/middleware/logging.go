@@ -19,6 +19,7 @@ type (
 	responseData struct {
 		status int
 		size   int
+		body   string
 	}
 	LoggingResponseWriter struct {
 		http.ResponseWriter
@@ -34,6 +35,7 @@ func (w *LoggingResponseWriter) WriteHeader(statusCode int) {
 func (w *LoggingResponseWriter) Write(data []byte) (int, error) {
 	size, err := w.ResponseWriter.Write(data)
 	w.data.size += size
+	w.data.body = string(data)
 	return size, err
 }
 
@@ -49,6 +51,7 @@ func NewRequestData(w http.ResponseWriter, r *http.Request) *RequestData {
 			data: &responseData{
 				status: http.StatusOK,
 				size:   0,
+				body:   "",
 			},
 		},
 	}
@@ -64,6 +67,7 @@ func RequestLogger(next http.Handler) http.Handler {
 			"uri", data.uri,
 			"method", data.method,
 			"statusCode", data.writer.data.status,
+			"size", data.writer.data.size,
 			"resLength", data.writer.data.size,
 			"execTime", data.execTime,
 		)

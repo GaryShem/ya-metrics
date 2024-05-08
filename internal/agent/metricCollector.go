@@ -5,7 +5,8 @@ import (
 	"math/rand"
 	"runtime"
 
-	"github.com/GaryShem/ya-metrics.git/internal/shared/storage"
+	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/memorystorage"
+	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
 )
 
 func SupportedRuntimeMetrics() []string {
@@ -29,6 +30,8 @@ func SupportedRuntimeMetrics() []string {
 		"MSpanSys",
 		"Mallocs",
 		"NextGC",
+		"NumForcedGC",
+		"NumGC",
 		"OtherSys",
 		"PauseTotalNs",
 		"StackInuse",
@@ -79,6 +82,10 @@ func Getter(m *runtime.MemStats, metricName string) (float64, error) {
 		return float64(m.Mallocs), nil
 	case "NextGC":
 		return float64(m.NextGC), nil
+	case "NumForcedGC":
+		return float64(m.NumForcedGC), nil
+	case "NumGC":
+		return float64(m.NumGC), nil
 	case "OtherSys":
 		return float64(m.OtherSys), nil
 	case "PauseTotalNs":
@@ -96,7 +103,7 @@ func Getter(m *runtime.MemStats, metricName string) (float64, error) {
 }
 
 type MetricCollector struct {
-	Storage                 storage.Repository
+	Storage                 models.Repository
 	RuntimeGaugeMetricNames []string
 }
 
@@ -104,7 +111,7 @@ func NewMetricCollector(gaugeMetrics []string) *MetricCollector {
 	tmpGaugeMetrics := make([]string, len(gaugeMetrics))
 	copy(tmpGaugeMetrics, gaugeMetrics)
 	return &MetricCollector{
-		Storage:                 storage.NewMemStorage(),
+		Storage:                 memorystorage.NewMemStorage(),
 		RuntimeGaugeMetricNames: tmpGaugeMetrics,
 	}
 }
@@ -124,13 +131,23 @@ func (m *MetricCollector) CollectMetrics() error {
 	return nil
 }
 
-func (m *MetricCollector) DumpMetrics() (*storage.MemStorage, error) {
-	ms := storage.NewMemStorage()
-	for name, gaugeValue := range m.Storage.GetGauges() {
-		ms.UpdateGauge(name, gaugeValue.Value)
+func (m *MetricCollector) DumpMetrics() ([]*models.Metrics, error) {
+	result := make([]*models.Metrics, 0)
+	for _, value := range m.Storage.GetGauges() {
+		result = append(result, &models.Metrics{
+			ID:    value.Name,
+			MType: value.Type,
+			Delta: nil,
+			Value: &value.Value,
+		})
 	}
-	for name, counterValue := range m.Storage.GetCounters() {
-		ms.UpdateCounter(name, counterValue.Value)
+	for _, value := range m.Storage.GetCounters() {
+		result = append(result, &models.Metrics{
+			ID:    value.Name,
+			MType: value.Type,
+			Delta: &value.Value,
+			Value: nil,
+		})
 	}
 
 	err := m.Storage.ResetCounter("PollCount")
@@ -138,5 +155,5 @@ func (m *MetricCollector) DumpMetrics() (*storage.MemStorage, error) {
 		return nil, err
 	}
 
-	return ms, nil
+	return result, nil
 }

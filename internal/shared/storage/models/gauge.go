@@ -1,4 +1,4 @@
-package metrics
+package models
 
 type Gauge struct {
 	Type  string  `json:"type"`

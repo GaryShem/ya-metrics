@@ -1,56 +1,68 @@
 package agent
 
 import (
-	"fmt"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 
-	"github.com/GaryShem/ya-metrics.git/internal/server"
-	"github.com/GaryShem/ya-metrics.git/internal/shared/storage"
+	"github.com/GaryShem/ya-metrics.git/internal/server/handlers"
+	"github.com/GaryShem/ya-metrics.git/internal/shared/logging"
+	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/memorystorage"
+	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
 )
 
-func TestRunAgent(t *testing.T) {
-	reportInteral := 2
-	pollInterval := 1
-	router, err := server.MetricsRouter(storage.NewMemStorage())
+type AgentSuite struct {
+	suite.Suite
+	repo   models.Repository
+	server *httptest.Server
+	af     *AgentFlags
+}
+
+func (s *AgentSuite) SetupSuite() {
+	s.repo = memorystorage.NewMemStorage()
+	router, err := handlers.MetricsRouter(s.repo)
 	if err != nil {
-		t.Fatal(err)
+		panic(err)
 	}
-	ts := httptest.NewServer(router)
-	defer ts.Close()
-	serverURLSlice := strings.Split(ts.URL, ":")
+	s.server = httptest.NewServer(router)
+	logging.Log.Infoln("server url:", s.server.URL)
+	serverURLSlice := strings.Split(s.server.URL, ":")
+	//serverIP := serverURLSlice[len(serverURLSlice)-2]
 	serverPort := serverURLSlice[len(serverURLSlice)-1]
-	serverAddress := fmt.Sprintf("127.0.0.1:%s", serverPort)
-	type args struct {
-		af       *AgentFlags
-		sendOnce bool
+	logging.Log.Infoln(s.server.URL, serverPort)
+	serverAddress, _ := strings.CutPrefix(s.server.URL, "http://")
+	logging.Log.Infoln("server address", serverAddress)
+	reportInterval := 2
+	pollInterval := 1
+	s.af = &AgentFlags{
+		Address:        &serverAddress,
+		ReportInterval: &reportInterval,
+		PollInterval:   &pollInterval,
 	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr require.ErrorAssertionFunc
-	}{
-		{
-			name: "Send Stats Once",
-			args: args{
-				af: &AgentFlags{
-					Address:        &serverAddress,
-					ReportInterval: &reportInteral,
-					PollInterval:   &pollInterval,
-				},
-				sendOnce: true,
-			},
-			wantErr: require.NoError,
-		},
+}
+
+func (s *AgentSuite) TearDownSuite() {
+	s.server.Close()
+}
+
+func TestAgentSuite(t *testing.T) {
+	suite.Run(t, new(AgentSuite))
+}
+
+func (s *AgentSuite) TestAgentMetrics() {
+	err := RunAgent(s.af, true, false)
+	s.Require().NoError(err)
+
+	for _, m := range SupportedRuntimeMetrics() {
+		g, err := s.repo.GetGauge(m)
+		s.Require().NoError(err)
+		s.Require().NotNil(g)
+		s.Require().NotEqual(0, g.Value)
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.wantErr(t,
-				RunAgent(tt.args.af, tt.args.sendOnce),
-				fmt.Sprintf("RunAgent(%v, %v)", tt.args.af, tt.args.sendOnce))
-		})
-	}
+	pc, err := s.repo.GetCounter("PollCount")
+	s.Require().NoError(err)
+	s.Require().NotNil(pc)
+	s.Require().NotEqual(0, pc.Value)
 }

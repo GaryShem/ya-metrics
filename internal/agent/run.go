@@ -1,13 +1,15 @@
 package agent
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/go-resty/resty/v2"
+
+	"github.com/GaryShem/ya-metrics.git/internal/shared/logging"
 )
 
 type AgentFlags struct {
@@ -23,48 +25,42 @@ func collectMetrics(mc *MetricCollector) error {
 func sendMetrics(mc *MetricCollector, host string) error {
 	client := resty.New()
 	metrics, errDump := mc.DumpMetrics()
+	logging.Log.Infoln(host)
 	if errDump != nil {
 		return fmt.Errorf("error dumping metrics: %w", errDump)
 	}
-	url := "http://{host}/update/{type}/{name}/{value}"
-	for name, value := range metrics.GaugeMetrics {
-		request := client.R().SetPathParams(map[string]string{
-			"host":  host,
-			"type":  "gauge",
-			"name":  name,
-			"value": strconv.FormatFloat(value.Value, 'f', 6, 64),
-		})
+	url := "http://{host}/update"
+
+	for _, m := range metrics {
+		mJSON, err := json.Marshal(m)
+		if err != nil {
+			return fmt.Errorf("error marshalling metric: %w", err)
+		}
+		request := client.R().SetPathParam("host", host).
+			SetHeader("Content-Type", "application/json").SetBody(mJSON)
 		res, err := request.Post(url)
 		if err != nil {
-			return fmt.Errorf("could not send metrics: %w", err)
+			if res != nil {
+				return fmt.Errorf("error sending metric: %w, %d %s", err, res.StatusCode(), res.String())
+			} else {
+				return fmt.Errorf("error sending metric, response is nil: %w", err)
+			}
 		}
 		if res.StatusCode() != http.StatusOK {
-			return fmt.Errorf("could not send metrics, return code: %v",
-				res.StatusCode())
-		}
-	}
-	for name, value := range metrics.CounterMetrics {
-		request := client.R().SetPathParams(map[string]string{
-			"host":  host,
-			"type":  "counter",
-			"name":  name,
-			"value": strconv.FormatInt(value.Value, 10),
-		})
-		res, err := request.Post(url)
-		if err != nil {
-			return fmt.Errorf("could not send metrics: %w", err)
-		}
-		if res.StatusCode() != http.StatusOK {
-			return fmt.Errorf("could not send metrics, return code: %v",
-				res.StatusCode())
+
+			return fmt.Errorf("error sending metric: %d %s", res.StatusCode(), res.String())
 		}
 	}
 	return nil
 }
 
-func RunAgent(af *AgentFlags, sendOnce bool) error {
+func RunAgent(af *AgentFlags, sendOnce bool, ignoreSendError bool) error {
+	if err := logging.InitializeZapLogger("Info"); err != nil {
+		return fmt.Errorf("error initializing logger: %w", err)
+	}
+	logging.Log.Infoln("agent started")
 	metrics := NewMetricCollector(SupportedRuntimeMetrics())
-	log.Printf("Server Address: %v\n", *af.Address)
+	logging.Log.Infoln("Server Address:", *af.Address)
 
 	pollInterval := time.Second * time.Duration(*af.PollInterval)
 	reportInterval := time.Second * time.Duration(*af.ReportInterval)
@@ -74,12 +70,12 @@ func RunAgent(af *AgentFlags, sendOnce bool) error {
 	log.Println("Starting metrics collection")
 	for {
 		sleepTime := min(dumpDelay, collectionDelay)
-		log.Printf("Sleep %v\n", sleepTime)
+		logging.Log.Infoln("Sleep", sleepTime)
 		time.Sleep(sleepTime)
 		dumpDelay -= sleepTime
 		collectionDelay -= sleepTime
 		if collectionDelay <= 0 {
-			log.Println("collecting metrics")
+			logging.Log.Infoln("collecting metrics")
 			collectionDelay += pollInterval
 			if err := collectMetrics(metrics); err != nil {
 				return err
@@ -87,12 +83,18 @@ func RunAgent(af *AgentFlags, sendOnce bool) error {
 		}
 		if dumpDelay <= 0 {
 			dumpDelay += reportInterval
-			log.Println("sending metrics")
+			logging.Log.Infoln("sending metrics")
 			if err := sendMetrics(metrics, *af.Address); err != nil {
-				return err
-			}
-			if sendOnce {
-				break
+				if !ignoreSendError {
+					return err
+				} else {
+					logging.Log.Warn("error sending metrics: ", err)
+				}
+			} else {
+				logging.Log.Infoln("metrics sent successfully")
+				if sendOnce {
+					break
+				}
 			}
 		}
 	}
