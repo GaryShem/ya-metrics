@@ -9,11 +9,17 @@ import (
 )
 
 type envConfig struct {
-	Address string `env:"ADDRESS"`
+	Address         string `env:"ADDRESS"`
+	StoreInterval   *int   `env:"STORE_INTERVAL"`
+	FileStoragePath string `env:"FILE_STORAGE_PATH"`
+	Restore         *bool  `env:"RESTORE"`
 }
 
 func ParseFlags(sf *server.ServerFlags) {
 	sf.Address = flag.String("a", "localhost:8080", "server address:port")
+	sf.StoreInterval = flag.Int("i", 300, "metric saving interval")
+	sf.FileStoragePath = flag.String("f", "/tmp/metrics-db.json", "storage file path")
+	sf.Restore = flag.Bool("r", true, "restore metrics from file")
 	flag.Parse()
 
 	ec := envConfig{}
@@ -22,5 +28,14 @@ func ParseFlags(sf *server.ServerFlags) {
 	}
 	if ec.Address != "" {
 		sf.Address = &ec.Address
+	}
+	if ec.FileStoragePath != "" {
+		sf.FileStoragePath = &ec.FileStoragePath
+	}
+	if ec.Restore != nil {
+		sf.Restore = ec.Restore
+	}
+	if ec.StoreInterval != nil {
+		sf.StoreInterval = ec.StoreInterval
 	}
 }

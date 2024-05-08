@@ -34,13 +34,8 @@ func (s *MemStorageCounterTestSuite) TestCounter() {
 		s.Require().NoError(err)
 		s.Equal(sum, rv.Value)
 	}
-	err := s.repo.ResetCounter("foo")
-	s.Require().NoError(err)
-	m, err := s.repo.GetCounter("foo")
-	s.Require().NoError(err)
-	s.Equal(m.Value, int64(0))
 
-	_, err = s.repo.GetCounter("bar")
+	_, err := s.repo.GetCounter("bar")
 	s.Require().ErrorIs(err, ErrMetricNotFound)
 }
 

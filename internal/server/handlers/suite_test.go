@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/memorystorage"
+	"github.com/GaryShem/ya-metrics.git/internal/server/storage/memorystorage"
 	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
 )
 

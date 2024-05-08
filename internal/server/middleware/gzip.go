@@ -7,10 +7,6 @@ import (
 	"strings"
 )
 
-//func getGzipMiddlewareSupportedContentTypes() []string {
-//	return []string{"application/json", "text/html"}
-//}
-
 type gzippingResponseWriter struct {
 	http.ResponseWriter
 	io.Writer

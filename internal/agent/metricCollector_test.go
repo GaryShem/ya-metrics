@@ -7,7 +7,6 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/memorystorage"
 	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
 )
 
@@ -49,30 +48,22 @@ func (s *MetricCollectorSuite) TestMetricGetter() {
 func (s *MetricCollectorSuite) TestCollectingMetrics() {
 	collectedMetrics := []string{"Alloc"}
 	expectedPollCount := int64(1)
-	mc := NewMetricCollector([]string{"Alloc"})
+	mc := NewMetricCollector(collectedMetrics)
 	err := mc.CollectMetrics()
 	s.Require().NoError(err)
 	for _, name := range collectedMetrics {
-		s.NotEqual(0, mc.Storage.GetGauges()[name])
+		s.NotEqual(0, mc.Gauges[name])
 	}
-
-	pollCount, err := mc.Storage.GetCounter("PollCount")
-	s.Require().NoError(err)
-	s.Equal(expectedPollCount, pollCount.Value)
+	pcName := "PollCount"
+	value, ok := mc.Counters[pcName]
+	s.True(ok)
+	s.Equal(expectedPollCount, value)
 }
 
 func (s *MetricCollectorSuite) TestIllegalMetric() {
-	mc := &MetricCollector{
-		Storage: &memorystorage.MemStorage{
-			GaugeMetrics: map[string]*models.Gauge{
-				"Alloc": models.NewGauge("Alloc", 2),
-			},
-			CounterMetrics: map[string]*models.Counter{
-				"PollCount": models.NewCounter("PollCount", 1),
-			},
-		},
-		RuntimeGaugeMetricNames: []string{"Alloc"},
-	}
+	mc := NewMetricCollector([]string{"Alloc"})
+	mc.Gauges["Alloc"] = 2
+	mc.Counters["PollCount"] = 1
 	dump, err := mc.DumpMetrics()
 	s.Require().NoError(err)
 	dumpJSON, err := json.Marshal(dump)
@@ -96,7 +87,7 @@ func (s *MetricCollectorSuite) TestIllegalMetric() {
 	wantJSON, err := json.Marshal(want)
 	s.Equal(wantJSON, dumpJSON)
 	s.Require().NoError(err)
-	pc, err := mc.Storage.GetCounter("PollCount")
-	s.Require().NoError(err)
-	s.Equal(int64(0), pc.Value)
+	value, ok := mc.Counters["PollCount"]
+	s.True(ok)
+	s.Equal(int64(0), value)
 }

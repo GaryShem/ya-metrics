@@ -67,12 +67,6 @@ func (h *RepoHandler) ListMetrics(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (h *RepoHandler) GetMetricJSON(w http.ResponseWriter, r *http.Request) {
-	// make sure metrics are passed via POST
-	if r.Method != http.MethodPost {
-		http.Error(w, "only POST is accepted", http.StatusBadRequest)
-		return
-	}
-
 	// deserialize request
 	metric := &models.Metrics{}
 	dec := json.NewDecoder(r.Body)
