@@ -6,7 +6,7 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
-func (pss *SqlStorage) Ping() error {
+func (pss *SQLStorage) Ping() error {
 	db, err := sql.Open("pgx", pss.ConnString)
 	if err != nil {
 		return ErrSQLConnectionFailed

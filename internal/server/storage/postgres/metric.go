@@ -4,7 +4,7 @@ import (
 	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
 )
 
-func (s *SqlStorage) UpdateMetric(m *models.Metrics) error {
+func (s *SQLStorage) UpdateMetric(m *models.Metrics) error {
 	switch m.MType {
 	case string(models.TypeGauge):
 		if err := s.UpdateGauge(m.ID, *m.Value); err != nil {
@@ -20,7 +20,7 @@ func (s *SqlStorage) UpdateMetric(m *models.Metrics) error {
 	return nil
 }
 
-func (s *SqlStorage) GetMetric(m *models.Metrics) error {
+func (s *SQLStorage) GetMetric(m *models.Metrics) error {
 	switch m.MType {
 	case string(models.TypeGauge):
 		gauge, err := s.GetGauge(m.ID)
@@ -40,7 +40,7 @@ func (s *SqlStorage) GetMetric(m *models.Metrics) error {
 	return nil
 }
 
-func (s *SqlStorage) ListMetrics() ([]*models.Metrics, error) {
+func (s *SQLStorage) ListMetrics() ([]*models.Metrics, error) {
 	result := make([]*models.Metrics, 0)
 	gauges, err := s.GetGauges()
 	if err != nil {

@@ -28,7 +28,7 @@ func RunServer(sf *ServerFlags) error {
 	var repo repository.Repository
 	if *sf.DBString != "" {
 		logging.Log.Infoln("initializing database storage")
-		dbRepo := postgres.NewSqlStorage(*sf.DBString)
+		dbRepo := postgres.NewSQLStorage(*sf.DBString)
 		if err := dbRepo.Init(); err != nil {
 			return err
 		}

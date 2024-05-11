@@ -30,14 +30,15 @@ func (s *MemStorageCounterTestSuite) TestCounter() {
 	sum := int64(0)
 	for _, c := range counters {
 		sum += c.Value
-		s.repo.UpdateCounter(c.Name, c.Value)
+		err := s.repo.UpdateCounter(c.Name, c.Value)
+		s.Require().NoError(err)
 		rv, err := s.repo.GetCounter(c.Name)
 		s.Require().NoError(err)
 		s.Equal(sum, rv.Value)
 	}
 
 	_, err := s.repo.GetCounter("bar")
-	s.Require().ErrorIs(err, ErrMetricNotFound)
+	s.Require().ErrorIs(err, repository.ErrMetricNotFound)
 }
 
 func (s *MemStorageCounterTestSuite) TestCounters() {
@@ -46,7 +47,8 @@ func (s *MemStorageCounterTestSuite) TestCounters() {
 		"b": models.NewCounter("b", 1),
 	}
 	for _, c := range counters {
-		s.repo.UpdateCounter(c.Name, c.Value)
+		err := s.repo.UpdateCounter(c.Name, c.Value)
+		s.Require().NoError(err)
 	}
 	value, err := s.repo.GetCounters()
 	s.Require().NoError(err)

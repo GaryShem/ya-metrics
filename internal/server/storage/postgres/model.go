@@ -12,39 +12,39 @@ import (
 var ErrSQLConnectionFailed = errors.New("SQL connection failed")
 var ErrSQLNotImplemented = errors.New("SQL not implemented yet")
 
-type SqlStorage struct {
+type SQLStorage struct {
 	ConnString string
 	db         *sql.DB
 }
 
-func NewSqlStorage(conn string) *SqlStorage {
-	return &SqlStorage{
+func NewSQLStorage(conn string) *SQLStorage {
+	return &SQLStorage{
 		ConnString: conn,
 	}
 }
 
-func (s *SqlStorage) Init() error {
+func (s *SQLStorage) Init() error {
 	db, err := sql.Open("pgx", s.ConnString)
 	if err != nil {
 		return err
 	}
 	// create tables
-	createGaugeTableSql := `CREATE TABLE IF NOT EXISTS gauges ( 
+	createGaugeTableSQL := `CREATE TABLE IF NOT EXISTS gauges ( 
     id varchar(45) NOT NULL,
     val double precision NOT NULL,
 	PRIMARY KEY (id));`
-	if _, err = db.Exec(createGaugeTableSql); err != nil {
+	if _, err = db.Exec(createGaugeTableSQL); err != nil {
 		return err
 	}
-	createCounterTableSql := `CREATE TABLE IF NOT EXISTS counters ( 
+	createCounterTableSQL := `CREATE TABLE IF NOT EXISTS counters ( 
     id varchar(45) NOT NULL,
     val bigint NOT NULL,
 	PRIMARY KEY (id));`
-	if _, err = db.Exec(createCounterTableSql); err != nil {
+	if _, err = db.Exec(createCounterTableSQL); err != nil {
 		return err
 	}
 	s.db = db
 	return nil
 }
 
-var _ repository.Repository = NewSqlStorage("")
+var _ repository.Repository = NewSQLStorage("")

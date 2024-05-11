@@ -13,7 +13,8 @@ import (
 
 func (s *MetricHandlerSuite) TestGetGauge() {
 	value := 3.14
-	s.repo.UpdateGauge("foo", value)
+	err := s.repo.UpdateGauge("foo", value)
+	s.Require().NoError(err)
 	reqURL := "/value/gauge/foo"
 	client := resty.New()
 	url := s.server.URL + reqURL
@@ -44,7 +45,8 @@ func (s *MetricHandlerSuite) TestGetGaugeEmptyName() {
 
 func (s *MetricHandlerSuite) TestGetCounter() {
 	var value int64 = 42
-	s.repo.UpdateCounter("foo", value)
+	err := s.repo.UpdateCounter("foo", value)
+	s.Require().NoError(err)
 	reqURL := "/value/counter/foo"
 	client := resty.New()
 	url := s.server.URL + reqURL
@@ -66,31 +68,37 @@ func (s *MetricHandlerSuite) TestGetIncorrectCounter() {
 
 func (s *MetricHandlerSuite) TestGetCounters() {
 	var value int64 = 42
-	s.repo.UpdateCounter("foo", value)
+	canon := []*models.Metrics{
+		&models.Metrics{
+			ID:    "foo",
+			MType: string(models.TypeCounter),
+			Delta: &value,
+			Value: nil,
+		},
+	}
+	canonJSON, err := json.Marshal(canon)
+	s.Require().NoError(err)
+	err = s.repo.UpdateCounter("foo", value)
+	s.Require().NoError(err)
 	reqURL := "/"
 	client := resty.New()
 	url := s.server.URL + reqURL
 	response, err := client.R().Get(url)
 	s.Require().NoError(err)
 	s.Require().Equal(http.StatusOK, response.StatusCode())
-	rs := struct {
-		GaugeMetrics   map[string]*models.Gauge   `json:"gaugeMetrics"`
-		CounterMetrics map[string]*models.Counter `json:"counterMetrics"`
-	}{}
+	rs := make([]*models.Metrics, 0)
 	responseString := string(response.Body())
 	logging.Log.Infoln(responseString)
 	err = json.Unmarshal([]byte(responseString), &rs)
 	s.Require().NoError(err)
-	s.Assert().Equal(len(rs.GaugeMetrics), 0)
-	s.Assert().Equal(len(rs.CounterMetrics), 1)
-	metric, ok := rs.CounterMetrics["foo"]
-	s.Require().True(ok)
-	s.Assert().Equal(value, metric.Value)
+	s.Require().Equal(len(rs), 1)
+	s.Require().Equal(string(canonJSON), responseString)
 }
 
 func (s *MetricHandlerSuite) TestGetCounterMetricJSON() {
 	value := int64(42)
-	s.repo.UpdateCounter("foo", value)
+	err := s.repo.UpdateCounter("foo", value)
+	s.Require().NoError(err)
 
 	m := models.Metrics{
 		ID:    "foo",
@@ -136,7 +144,8 @@ func (s *MetricHandlerSuite) TestGetCounterMetricJSONInvalid() {
 
 func (s *MetricHandlerSuite) TestGetGaugeMetricJSON() {
 	value := 3.14
-	s.repo.UpdateGauge("foo", value)
+	err := s.repo.UpdateGauge("foo", value)
+	s.Require().NoError(err)
 
 	m := models.Metrics{
 		ID:    "foo",

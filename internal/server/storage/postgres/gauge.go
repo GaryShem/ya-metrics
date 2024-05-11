@@ -5,7 +5,7 @@ import (
 	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
 )
 
-func (s *SqlStorage) GetGauges() (map[string]*models.Gauge, error) {
+func (s *SQLStorage) GetGauges() (map[string]*models.Gauge, error) {
 	logging.Log.Infoln("Getting all SQL gauges")
 	result := make(map[string]*models.Gauge)
 	queryTemplate := `SELECT * FROM gauges`
@@ -25,7 +25,7 @@ func (s *SqlStorage) GetGauges() (map[string]*models.Gauge, error) {
 	return result, nil
 }
 
-func (s *SqlStorage) GetGauge(metricName string) (*models.Gauge, error) {
+func (s *SQLStorage) GetGauge(metricName string) (*models.Gauge, error) {
 	logging.Log.Infoln("Getting SQL gauge", metricName)
 	queryTemplate := `SELECT * FROM gauges WHERE id = $1`
 	res := s.db.QueryRow(queryTemplate, metricName)
@@ -36,7 +36,7 @@ func (s *SqlStorage) GetGauge(metricName string) (*models.Gauge, error) {
 	return gauge, nil
 }
 
-func (s *SqlStorage) UpdateGauge(metricName string, value float64) error {
+func (s *SQLStorage) UpdateGauge(metricName string, value float64) error {
 	logging.Log.Infoln("Updating SQL gauge", metricName, value)
 	queryTemplate := `INSERT INTO gauges (id, val) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET val = $2`
 	if _, err := s.db.Exec(queryTemplate, metricName, value); err != nil {

@@ -5,7 +5,7 @@ import (
 	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
 )
 
-func (s *SqlStorage) GetCounters() (map[string]*models.Counter, error) {
+func (s *SQLStorage) GetCounters() (map[string]*models.Counter, error) {
 	logging.Log.Infoln("Getting all SQL counters")
 	result := make(map[string]*models.Counter)
 	queryTemplate := `SELECT * FROM counters`
@@ -25,7 +25,7 @@ func (s *SqlStorage) GetCounters() (map[string]*models.Counter, error) {
 	return result, nil
 }
 
-func (s *SqlStorage) GetCounter(metricName string) (*models.Counter, error) {
+func (s *SQLStorage) GetCounter(metricName string) (*models.Counter, error) {
 	logging.Log.Infoln("Getting SQL counter", metricName)
 	queryTemplate := `SELECT * FROM counters WHERE id = $1`
 	res := s.db.QueryRow(queryTemplate, metricName)
@@ -36,7 +36,7 @@ func (s *SqlStorage) GetCounter(metricName string) (*models.Counter, error) {
 	return counter, nil
 }
 
-func (s *SqlStorage) UpdateCounter(metricName string, delta int64) error {
+func (s *SQLStorage) UpdateCounter(metricName string, delta int64) error {
 	logging.Log.Infoln("Updating SQL gauge", metricName, delta)
 	queryTemplate := `INSERT INTO counters(id, val) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET val = excluded.val + $2`
 	if _, err := s.db.Exec(queryTemplate, metricName, delta); err != nil {
