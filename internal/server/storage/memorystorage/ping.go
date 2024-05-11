@@ -6,7 +6,7 @@ import (
 
 func (ms *MemStorage) Ping() error {
 	if postgres.SQLStorage == nil {
-		return postgres.SQLNotInitialized
+		return postgres.ErrSQLNotInitialized
 	}
 	return postgres.SQLStorage.Ping()
 }

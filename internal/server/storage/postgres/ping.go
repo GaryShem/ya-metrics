@@ -9,7 +9,7 @@ import (
 func (pss *PostgreSQLStorage) Ping() error {
 	db, err := sql.Open("pgx", pss.ConnString)
 	if err != nil {
-		return SQLConnectionFailed
+		return ErrSQLConnectionFailed
 	}
 	defer db.Close()
 	return db.Ping()

@@ -2,8 +2,8 @@ package postgres
 
 import "errors"
 
-var SQLNotInitialized = errors.New("SQL not initialized")
-var SQLConnectionFailed = errors.New("SQL connection failed")
+var ErrSQLNotInitialized = errors.New("SQL not initialized")
+var ErrSQLConnectionFailed = errors.New("SQL connection failed")
 
 var SQLStorage *PostgreSQLStorage
 
