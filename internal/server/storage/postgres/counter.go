@@ -13,6 +13,10 @@ func (s *SQLStorage) GetCounters() (map[string]*models.Counter, error) {
 	if err != nil {
 		return nil, err
 	}
+	if res.Err() != nil {
+		return nil, res.Err()
+	}
+	defer res.Close()
 	for res.Next() {
 		counter := models.NewCounter("", 0)
 		err = res.Scan(&counter.Name, &counter.Value)
@@ -21,7 +25,6 @@ func (s *SQLStorage) GetCounters() (map[string]*models.Counter, error) {
 		}
 	}
 
-	err = res.Close()
 	if err != nil {
 		return nil, err
 	}
