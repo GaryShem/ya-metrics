@@ -13,7 +13,7 @@ type envConfig struct {
 	StoreInterval   *int   `env:"STORE_INTERVAL"`
 	FileStoragePath string `env:"FILE_STORAGE_PATH"`
 	Restore         *bool  `env:"RESTORE"`
-	DbString        string `env:"DATABASE_DSN"`
+	DBString        string `env:"DATABASE_DSN"`
 }
 
 func ParseFlags(sf *server.ServerFlags) {
@@ -21,7 +21,7 @@ func ParseFlags(sf *server.ServerFlags) {
 	sf.StoreInterval = flag.Int("i", 300, "metric saving interval")
 	sf.FileStoragePath = flag.String("f", "/tmp/metrics-db.json", "storage file path")
 	sf.Restore = flag.Bool("r", true, "restore metrics from file")
-	sf.DbString = flag.String("d", "", "database connection string")
+	sf.DBString = flag.String("d", "", "database connection string")
 	flag.Parse()
 
 	ec := envConfig{}
@@ -40,7 +40,7 @@ func ParseFlags(sf *server.ServerFlags) {
 	if ec.StoreInterval != nil {
 		sf.StoreInterval = ec.StoreInterval
 	}
-	if ec.DbString != "" {
-		sf.DbString = &ec.DbString
+	if ec.DBString != "" {
+		sf.DBString = &ec.DBString
 	}
 }

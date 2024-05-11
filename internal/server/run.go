@@ -17,7 +17,7 @@ type ServerFlags struct {
 	StoreInterval   *int
 	FileStoragePath *string
 	Restore         *bool
-	DbString        *string
+	DBString        *string
 }
 
 func RunServer(sf *ServerFlags) error {
@@ -36,7 +36,7 @@ func RunServer(sf *ServerFlags) error {
 	go func() {
 		_ = fs.SaveMetricsFile(time.Second * time.Duration(*sf.StoreInterval))
 	}()
-	dbStorage := postgres.NewPostgreSQLStorage(*sf.DbString)
+	dbStorage := postgres.NewPostgreSQLStorage(*sf.DBString)
 	r, err := handlers.MetricsRouter(fs.MS, dbStorage)
 	if err != nil {
 		return err
