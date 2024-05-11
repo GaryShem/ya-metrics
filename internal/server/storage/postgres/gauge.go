@@ -13,7 +13,6 @@ func (s *SQLStorage) GetGauges() (map[string]*models.Gauge, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer res.Close()
 	for res.Next() {
 		gauge := models.NewGauge("", 0)
 		err = res.Scan(&gauge.Name, &gauge.Value)
@@ -22,6 +21,10 @@ func (s *SQLStorage) GetGauges() (map[string]*models.Gauge, error) {
 		}
 	}
 
+	err = res.Close()
+	if err != nil {
+		return nil, err
+	}
 	return result, nil
 }
 
