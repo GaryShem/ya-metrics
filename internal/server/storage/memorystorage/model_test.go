@@ -28,8 +28,10 @@ func (s *MemStorageSuite) TestNewMemStorage() {
 
 func (s *MemStorageSuite) TestCounters() {
 	value := int64(42)
-	s.ms.UpdateCounter("foo", value)
-	counters := s.ms.GetCounters()
+	err := s.ms.UpdateCounter("foo", value)
+	s.Require().NoError(err)
+	counters, err := s.ms.GetCounters()
+	s.Require().NoError(err)
 	c, ok := counters["foo"]
 	s.Require().True(ok)
 	s.Equal(value, c.Value)
@@ -37,7 +39,8 @@ func (s *MemStorageSuite) TestCounters() {
 	s.Require().NoError(err)
 	s.Equal(value, foo.Value)
 
-	s.ms.UpdateCounter("foo", value)
+	err = s.ms.UpdateCounter("foo", value)
+	s.Require().NoError(err)
 	foo, err = s.ms.GetCounter("foo")
 	s.Require().NoError(err)
 	s.Equal(value*2, foo.Value)
@@ -45,9 +48,11 @@ func (s *MemStorageSuite) TestCounters() {
 
 func (s *MemStorageSuite) TestGauges() {
 	value := float64(42)
-	s.ms.UpdateGauge("foo", value)
+	err := s.ms.UpdateGauge("foo", value)
+	s.Require().NoError(err)
 
-	gauges := s.ms.GetGauges()
+	gauges, err := s.ms.GetGauges()
+	s.Require().NoError(err)
 	c, ok := gauges["foo"]
 	s.Require().True(ok)
 	s.Equal(value, c.Value)

@@ -5,12 +5,13 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
+	"github.com/GaryShem/ya-metrics.git/internal/server/storage/repository"
 	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
 )
 
 type MemStorageMetricsTestSuite struct {
 	suite.Suite
-	repo models.Repository
+	repo repository.Repository
 }
 
 func (s *MemStorageMetricsTestSuite) BeforeTest(suiteName, testName string) {

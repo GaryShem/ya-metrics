@@ -6,11 +6,11 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/GaryShem/ya-metrics.git/internal/server/middleware"
+	"github.com/GaryShem/ya-metrics.git/internal/server/storage/repository"
 	"github.com/GaryShem/ya-metrics.git/internal/shared/logging"
-	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
 )
 
-func MetricsRouter(ms models.Repository) (chi.Router, error) {
+func MetricsRouter(ms repository.Repository) (chi.Router, error) {
 	if err := logging.InitializeZapLogger("Info"); err != nil {
 		return nil, err
 	}

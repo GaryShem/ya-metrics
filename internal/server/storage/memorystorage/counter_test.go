@@ -5,12 +5,13 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
+	"github.com/GaryShem/ya-metrics.git/internal/server/storage/repository"
 	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
 )
 
 type MemStorageCounterTestSuite struct {
 	suite.Suite
-	repo models.Repository
+	repo repository.Repository
 }
 
 func (s *MemStorageCounterTestSuite) BeforeTest(_, _ string) {
@@ -47,5 +48,7 @@ func (s *MemStorageCounterTestSuite) TestCounters() {
 	for _, c := range counters {
 		s.repo.UpdateCounter(c.Name, c.Value)
 	}
-	s.EqualValues(counters, s.repo.GetCounters())
+	value, err := s.repo.GetCounters()
+	s.Require().NoError(err)
+	s.EqualValues(counters, value)
 }

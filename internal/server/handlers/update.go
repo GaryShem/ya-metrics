@@ -32,7 +32,11 @@ func (h *RepoHandler) UpdateGauge(w http.ResponseWriter, r *http.Request) {
 			http.StatusBadRequest)
 		return
 	}
-	h.repo.UpdateGauge(metricName, metricValue)
+	err = h.repo.UpdateGauge(metricName, metricValue)
+	if err != nil {
+		http.Error(w, "could not update gauge metric", http.StatusInternalServerError)
+		return
+	}
 	_, err = w.Write([]byte(fmt.Sprintf("metric %v updated with value %v", metricName, metricValueString)))
 	if err != nil {
 		http.Error(w, "could not write response, contact server admins", http.StatusInternalServerError)
@@ -59,7 +63,11 @@ func (h *RepoHandler) UpdateCounter(w http.ResponseWriter, r *http.Request) {
 			http.StatusBadRequest)
 		return
 	}
-	h.repo.UpdateCounter(metricName, metricValue)
+	err = h.repo.UpdateCounter(metricName, metricValue)
+	if err != nil {
+		http.Error(w, "could not update counter metric", http.StatusInternalServerError)
+		return
+	}
 	_, err = w.Write([]byte(fmt.Sprintf("metric %v updated with value %v", metricName, metricValueString)))
 	if err != nil {
 		http.Error(w, "could not write response, contact server admins", http.StatusInternalServerError)
@@ -78,9 +86,9 @@ func (h *RepoHandler) UpdateMetric(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "metric type is empty", http.StatusNotFound)
 	}
 	switch metricType {
-	case "counter":
+	case string(models.TypeCounter):
 		h.UpdateCounter(w, r)
-	case "gauge":
+	case string(models.TypeGauge):
 		h.UpdateGauge(w, r)
 	default:
 		http.Error(w, fmt.Sprintf("unknown metric type %v", metricType), http.StatusBadRequest)
