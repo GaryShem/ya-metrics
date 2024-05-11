@@ -22,7 +22,7 @@ type AgentSuite struct {
 
 func (s *AgentSuite) SetupSuite() {
 	s.repo = memorystorage.NewMemStorage()
-	router, err := handlers.MetricsRouter(s.repo, nil)
+	router, err := handlers.MetricsRouter(s.repo)
 	if err != nil {
 		panic(err)
 	}

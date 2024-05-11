@@ -6,6 +6,7 @@ func (h *RepoHandler) Ping(w http.ResponseWriter, r *http.Request) {
 	err := h.repo.Ping()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 	w.WriteHeader(http.StatusOK)
 }

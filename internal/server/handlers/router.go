@@ -6,12 +6,11 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/GaryShem/ya-metrics.git/internal/server/middleware"
-	"github.com/GaryShem/ya-metrics.git/internal/server/storage/postgres"
 	"github.com/GaryShem/ya-metrics.git/internal/shared/logging"
 	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
 )
 
-func MetricsRouter(ms models.Repository, dbConn *postgres.PostgreSQLStorage) (chi.Router, error) {
+func MetricsRouter(ms models.Repository) (chi.Router, error) {
 	if err := logging.InitializeZapLogger("Info"); err != nil {
 		return nil, err
 	}
@@ -20,9 +19,7 @@ func MetricsRouter(ms models.Repository, dbConn *postgres.PostgreSQLStorage) (ch
 	r.Use(middleware.RequestGzipper)
 	r.Use(middleware.RequestLogger)
 	r.Route(`/`, func(r chi.Router) {
-		if dbConn != nil {
-			r.Get(`/ping`, dbConn.Ping)
-		}
+		r.Get(`/ping`, h.Ping)
 
 		r.Route(`/update`, func(r chi.Router) {
 			r.Post(`/`, h.UpdateMetricJSON)

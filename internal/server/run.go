@@ -36,11 +36,10 @@ func RunServer(sf *ServerFlags) error {
 	go func() {
 		_ = fs.SaveMetricsFile(time.Second * time.Duration(*sf.StoreInterval))
 	}()
-	var dbStorage *postgres.PostgreSQLStorage = nil
 	if *sf.DBString != "" {
-		dbStorage = postgres.NewPostgreSQLStorage(*sf.DBString)
+		postgres.SQLStorage = postgres.NewPostgreSQLStorage(*sf.DBString)
 	}
-	r, err := handlers.MetricsRouter(fs.MS, dbStorage)
+	r, err := handlers.MetricsRouter(fs.MS)
 	if err != nil {
 		return err
 	}
