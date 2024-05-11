@@ -20,7 +20,9 @@ func MetricsRouter(ms models.Repository, dbConn *postgres.PostgreSQLStorage) (ch
 	r.Use(middleware.RequestGzipper)
 	r.Use(middleware.RequestLogger)
 	r.Route(`/`, func(r chi.Router) {
-		r.Get(`/ping`, dbConn.TestConnection)
+		if dbConn != nil {
+			r.Get(`/ping`, dbConn.Ping)
+		}
 
 		r.Route(`/update`, func(r chi.Router) {
 			r.Post(`/`, h.UpdateMetricJSON)

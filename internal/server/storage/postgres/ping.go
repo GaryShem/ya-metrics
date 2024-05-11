@@ -7,7 +7,7 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
-func (pss *PostgreSQLStorage) TestConnection(w http.ResponseWriter, r *http.Request) {
+func (pss *PostgreSQLStorage) Ping(w http.ResponseWriter, r *http.Request) {
 	db, err := sql.Open("pgx", pss.ConnString)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

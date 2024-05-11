@@ -97,11 +97,3 @@ func (h *RepoHandler) GetMetricJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
-
-func (h *RepoHandler) Ping(w http.ResponseWriter, r *http.Request) {
-	err := h.repo.Ping()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-	w.WriteHeader(http.StatusOK)
-}
