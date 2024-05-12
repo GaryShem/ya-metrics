@@ -12,6 +12,7 @@ type Repository interface {
 	UpdateGauge(metricName string, value float64) error
 	UpdateCounter(metricName string, value int64) error
 	UpdateMetric(m *models.Metrics) error
+	UpdateMetricBatch(metrics []*models.Metrics) ([]*models.Metrics, error)
 	GetGauge(metricName string) (*models.Gauge, error)
 	GetCounter(metricName string) (*models.Counter, error)
 	GetMetric(m *models.Metrics) error

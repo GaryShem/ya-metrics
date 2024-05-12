@@ -25,9 +25,6 @@ func (s *SQLStorage) GetCounters() (map[string]*models.Counter, error) {
 		}
 	}
 
-	if err != nil {
-		return nil, err
-	}
 	return result, nil
 }
 
@@ -43,8 +40,8 @@ func (s *SQLStorage) GetCounter(metricName string) (*models.Counter, error) {
 }
 
 func (s *SQLStorage) UpdateCounter(metricName string, delta int64) error {
-	logging.Log.Infoln("Updating SQL gauge", metricName, delta)
-	queryTemplate := `INSERT INTO counters(id, val) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET val = excluded.val + $2`
+	logging.Log.Infoln("Updating SQL counter", metricName, delta)
+	queryTemplate := `INSERT INTO counters(id, val) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET val = counters.val + excluded.val`
 	if _, err := s.db.Exec(queryTemplate, metricName, delta); err != nil {
 		return err
 	}

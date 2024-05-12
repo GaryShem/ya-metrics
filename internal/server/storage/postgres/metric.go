@@ -1,6 +1,9 @@
 package postgres
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
 )
 
@@ -18,6 +21,133 @@ func (s *SQLStorage) UpdateMetric(m *models.Metrics) error {
 		return models.ErrInvalidMetricType
 	}
 	return nil
+}
+
+func (s *SQLStorage) UpdateMetricBatch(metrics []*models.Metrics) ([]*models.Metrics, error) {
+	result := make([]*models.Metrics, 0)
+	if len(metrics) == 0 {
+		return result, nil
+	}
+	tx, err := s.db.Begin()
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+	gauges := make([]*models.Metrics, 0)
+	counters := make([]*models.Metrics, 0)
+	for _, m := range metrics {
+		switch m.MType {
+		case string(models.TypeGauge):
+			isDuplicate := false
+			for _, g := range gauges {
+				if g.ID == m.ID {
+					isDuplicate = true
+					g.Value = m.Value
+					break
+				}
+			}
+			if !isDuplicate {
+				gauges = append(gauges, m)
+			}
+		case string(models.TypeCounter):
+			isDuplicate := false
+			for _, c := range counters {
+				if c.ID == m.ID {
+					isDuplicate = true
+					c.Delta = m.Delta
+					break
+				}
+			}
+			if !isDuplicate {
+				counters = append(counters, m)
+			}
+		default:
+			return nil, models.ErrInvalidMetricType
+		}
+	}
+	gauges, err = s.updateGauges(gauges)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update gauges: %w", err)
+	}
+	counters, err = s.updateCounters(counters)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update counters: %w", err)
+	}
+	if err = tx.Commit(); err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+	result = make([]*models.Metrics, len(gauges)+len(counters))
+	result = append(result, gauges...)
+	result = append(result, counters...)
+	return result, nil
+}
+
+func (s *SQLStorage) updateGauges(metrics []*models.Metrics) ([]*models.Metrics, error) {
+	result := make([]*models.Metrics, 0)
+	if len(metrics) == 0 {
+		return result, nil
+	}
+	valuePieces := make([]string, 0)
+	for _, m := range metrics {
+		valuePieces = append(valuePieces, fmt.Sprintf("(%s, %f)", m.ID, *m.Value))
+	}
+	valuesString := strings.Join(valuePieces, ",")
+	queryTemplate := fmt.Sprintf(`INSERT INTO gauges(id, val) VALUES %s ON CONFLICT (id) DO UPDATE SET val = excluded.val RETURNING *`, valuesString)
+	rows, err := s.db.Query(queryTemplate)
+	if err != nil {
+		return nil, err
+	}
+	if rows.Err() != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		row := models.NewGauge("", 0)
+		if err = rows.Scan(&row.Name, &row.Value); err != nil {
+			return nil, err
+		}
+		result = append(result, &models.Metrics{
+			MType: string(models.TypeGauge),
+			ID:    row.Name,
+			Delta: nil,
+			Value: &row.Value,
+		})
+	}
+
+	return result, nil
+}
+
+func (s *SQLStorage) updateCounters(metrics []*models.Metrics) ([]*models.Metrics, error) {
+	result := make([]*models.Metrics, 0)
+	if len(metrics) == 0 {
+		return result, nil
+	}
+	valuePieces := make([]string, 0)
+	for _, m := range metrics {
+		valuePieces = append(valuePieces, fmt.Sprintf("(%s, %d)", m.ID, *m.Delta))
+	}
+	valuesString := strings.Join(valuePieces, ",")
+	queryTemplate := fmt.Sprintf(`INSERT INTO counters(id, val) VALUES %s ON CONFLICT (id) DO UPDATE SET val = counters.val + excluded.val RETURNING *`, valuesString)
+	rows, err := s.db.Query(queryTemplate)
+	if err != nil {
+		return nil, err
+	}
+	if rows.Err() != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		row := models.NewCounter("", 0)
+		if err = rows.Scan(&row.Name, &row.Value); err != nil {
+			return nil, err
+		}
+		result = append(result, &models.Metrics{
+			MType: string(models.TypeCounter),
+			ID:    row.Name,
+			Delta: &row.Value,
+			Value: nil,
+		})
+	}
+
+	return result, nil
 }
 
 func (s *SQLStorage) GetMetric(m *models.Metrics) error {
