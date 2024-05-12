@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/GaryShem/ya-metrics.git/internal/shared/logging"
 	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
 )
 
@@ -54,7 +55,8 @@ func (s *SQLStorage) UpdateMetricBatch(metrics []*models.Metrics) ([]*models.Met
 			for _, c := range counters {
 				if c.ID == m.ID {
 					isDuplicate = true
-					c.Delta = m.Delta
+					value := *c.Delta + *m.Delta
+					c.Delta = &value
 					break
 				}
 			}
@@ -87,13 +89,19 @@ func (s *SQLStorage) updateGauges(metrics []*models.Metrics) ([]*models.Metrics,
 	if len(metrics) == 0 {
 		return result, nil
 	}
-	valuePieces := make([]string, 0)
+	templatePieces := make([]string, 0)
+	valuePieces := make([]interface{}, 0)
+	i := 1
 	for _, m := range metrics {
-		valuePieces = append(valuePieces, fmt.Sprintf("(%s, %f)", m.ID, *m.Value))
+		templatePieces = append(templatePieces, fmt.Sprintf("($%d, $%d)", i, i+1))
+		valuePieces = append(valuePieces, m.ID, *m.Value)
+		i += 2
 	}
-	valuesString := strings.Join(valuePieces, ",")
+	valuesString := strings.Join(templatePieces, ", ")
+
 	queryTemplate := fmt.Sprintf(`INSERT INTO gauges(id, val) VALUES %s ON CONFLICT (id) DO UPDATE SET val = excluded.val RETURNING *`, valuesString)
-	rows, err := s.db.Query(queryTemplate)
+	logging.Log.Infoln("gauge update sql:", queryTemplate, valuePieces)
+	rows, err := s.db.Query(queryTemplate, valuePieces...)
 	if err != nil {
 		return nil, err
 	}
@@ -121,13 +129,19 @@ func (s *SQLStorage) updateCounters(metrics []*models.Metrics) ([]*models.Metric
 	if len(metrics) == 0 {
 		return result, nil
 	}
-	valuePieces := make([]string, 0)
+	templatePieces := make([]string, 0)
+	valuePieces := make([]interface{}, 0)
+	i := 1
 	for _, m := range metrics {
-		valuePieces = append(valuePieces, fmt.Sprintf("(%s, %d)", m.ID, *m.Delta))
+		templatePieces = append(templatePieces, fmt.Sprintf("($%d, $%d)", i, i+1))
+		valuePieces = append(valuePieces, m.ID, *m.Delta)
+		i += 2
 	}
-	valuesString := strings.Join(valuePieces, ",")
+	valuesString := strings.Join(templatePieces, ", ")
+
 	queryTemplate := fmt.Sprintf(`INSERT INTO counters(id, val) VALUES %s ON CONFLICT (id) DO UPDATE SET val = counters.val + excluded.val RETURNING *`, valuesString)
-	rows, err := s.db.Query(queryTemplate)
+	logging.Log.Infoln("counter update sql:", queryTemplate, valuePieces)
+	rows, err := s.db.Query(queryTemplate, valuePieces...)
 	if err != nil {
 		return nil, err
 	}

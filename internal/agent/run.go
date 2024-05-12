@@ -118,7 +118,7 @@ func sendMetricsBatch(mc *MetricCollector, host string, gzipRequest bool) error 
 	if errDump != nil {
 		return fmt.Errorf("error dumping metrics: %w", errDump)
 	}
-	url := "http://{host}/updates"
+	url := "http://{host}/updates/"
 	mJSON, err := json.Marshal(metrics)
 	if err != nil {
 		return fmt.Errorf("error marshalling metric: %w", err)

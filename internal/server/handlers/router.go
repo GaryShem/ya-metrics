@@ -21,7 +21,7 @@ func MetricsRouter(ms repository.Repository) (chi.Router, error) {
 
 	r.Route(`/`, func(r chi.Router) {
 		r.Get(`/ping`, h.Ping)
-		r.Post(`/updates`, h.UpdateMetricBatch)
+		r.Post(`/updates/`, h.UpdateMetricBatch)
 
 		r.Route(`/update`, func(r chi.Router) {
 			r.Post(`/`, h.UpdateMetricJSON)
