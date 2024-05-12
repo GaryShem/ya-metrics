@@ -42,7 +42,7 @@ func (ms *MemStorage) UpdateMetricBatch(metrics []*models.Metrics) ([]*models.Me
 			return nil, err
 		}
 	}
-	result := make([]*models.Metrics, len(metrics))
+	result := make([]*models.Metrics, 0)
 	for _, m := range metrics {
 		isDuplicate := false
 		for _, r := range result {

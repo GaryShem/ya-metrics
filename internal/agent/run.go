@@ -39,7 +39,7 @@ func SendMetrics(mc *MetricCollector, host string, sendOnce bool, ignoreSendErro
 	defer timer.Stop()
 	for {
 		<-timer.C
-		err := sendMetrics(mc, host, gzipRequest)
+		err := sendMetricsBatch(mc, host, gzipRequest)
 		if err != nil {
 			if ignoreSendError {
 				logging.Log.Warnln("Ignore send error:", err)
@@ -107,6 +107,42 @@ func sendMetrics(mc *MetricCollector, host string, gzipRequest bool) error {
 		if res.StatusCode() != http.StatusOK {
 			return fmt.Errorf("status code not 200: %d %s", res.StatusCode(), res.String())
 		}
+	}
+	return nil
+}
+
+func sendMetricsBatch(mc *MetricCollector, host string, gzipRequest bool) error {
+	client := resty.New()
+	metrics, errDump := mc.DumpMetrics()
+	logging.Log.Infoln(host)
+	if errDump != nil {
+		return fmt.Errorf("error dumping metrics: %w", errDump)
+	}
+	url := "http://{host}/updates"
+	mJSON, err := json.Marshal(metrics)
+	if err != nil {
+		return fmt.Errorf("error marshalling metric: %w", err)
+	}
+	request := client.R().SetPathParam("host", host).
+		SetHeader("Content-Type", "application/json")
+	if gzipRequest {
+		err = wrapGzipRequest(request, mJSON)
+		if err != nil {
+			return fmt.Errorf("error gzipping metric: %w", err)
+		}
+	} else {
+		request.SetBody(mJSON)
+	}
+	res, err := request.Post(url)
+	if err != nil {
+		if res != nil {
+			return fmt.Errorf("error sending metric, response is not nil: %w, %d %s", err, res.StatusCode(), res.String())
+		} else {
+			return fmt.Errorf("error sending metric, response is nil: %w", err)
+		}
+	}
+	if res.StatusCode() != http.StatusOK {
+		return fmt.Errorf("status code not 200: %d %s", res.StatusCode(), res.String())
 	}
 	return nil
 }
