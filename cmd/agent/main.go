@@ -20,7 +20,7 @@ func main() {
 		"send interval", *af.ReportInterval,
 	)
 	err = agent.RunAgent(af, agent.SupportedRuntimeMetrics(),
-		false, true, true)
+		false, false, true)
 	if err != nil {
 		log.Fatalf("agent closed with error %v", err)
 	}

@@ -133,7 +133,7 @@ func sendMetricsBatch(mc *MetricCollector, host string, gzipRequest bool) error 
 	} else {
 		request.SetBody(mJSON)
 	}
-	res, err := request.Post(url)
+	res, err := trySendMetricsRetry(request, url)
 	if err != nil {
 		if res != nil {
 			return fmt.Errorf("error sending metric, response is not nil: %w, %d %s", err, res.StatusCode(), res.String())
@@ -145,6 +145,22 @@ func sendMetricsBatch(mc *MetricCollector, host string, gzipRequest bool) error 
 		return fmt.Errorf("status code not 200: %d %s", res.StatusCode(), res.String())
 	}
 	return nil
+}
+
+func trySendMetricsRetry(r *resty.Request, url string) (*resty.Response, error) {
+	for timeout := range []int{1, 3, 5, -1} {
+		res, err := r.Post(url)
+		if err == nil {
+			return res, err
+		}
+		if timeout < 0 {
+			return res, err
+		}
+		if res != nil && res.StatusCode() == 0 {
+			time.Sleep(time.Second * time.Duration(timeout))
+		}
+	}
+	return nil, fmt.Errorf("timeout should end with <0")
 }
 
 func RunAgent(af *AgentFlags, runtimeMetrics []string, sendOnce bool, ignoreSendError bool, gzipRequest bool) error {
