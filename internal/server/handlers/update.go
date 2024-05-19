@@ -146,10 +146,10 @@ func (h *RepoHandler) UpdateMetricBatch(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// deserialize request
-	metrics := make([]*models.Metrics, 0)
+	metrics := make([]models.Metrics, 0)
 	dec := json.NewDecoder(r.Body)
 	if err := dec.Decode(&metrics); err != nil {
-		logging.Log.Debug("error decoding request json", zap.Error(err))
+		logging.Log.Errorln("error decoding request json", zap.Error(err))
 		http.Error(w, "error decoding request json", http.StatusBadRequest)
 	}
 

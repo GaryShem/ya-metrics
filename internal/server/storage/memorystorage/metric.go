@@ -36,13 +36,13 @@ func (ms *MemStorage) UpdateMetric(m *models.Metrics) error {
 	}
 }
 
-func (ms *MemStorage) UpdateMetricBatch(metrics []*models.Metrics) ([]*models.Metrics, error) {
+func (ms *MemStorage) UpdateMetricBatch(metrics []models.Metrics) ([]models.Metrics, error) {
 	for _, m := range metrics {
-		if err := ms.UpdateMetric(m); err != nil {
+		if err := ms.UpdateMetric(&m); err != nil {
 			return nil, err
 		}
 	}
-	result := make([]*models.Metrics, 0)
+	result := make([]models.Metrics, 0)
 	for _, m := range metrics {
 		isDuplicate := false
 		for _, r := range result {
@@ -54,7 +54,7 @@ func (ms *MemStorage) UpdateMetricBatch(metrics []*models.Metrics) ([]*models.Me
 		if isDuplicate {
 			continue
 		}
-		err := ms.GetMetric(m)
+		err := ms.GetMetric(&m)
 		if err != nil {
 			return nil, err
 		}
@@ -87,10 +87,10 @@ func (ms *MemStorage) GetMetric(m *models.Metrics) error {
 	}
 }
 
-func (ms *MemStorage) ListMetrics() ([]*models.Metrics, error) {
-	result := make([]*models.Metrics, 0)
+func (ms *MemStorage) ListMetrics() ([]models.Metrics, error) {
+	result := make([]models.Metrics, 0)
 	for _, v := range ms.GaugeMetrics {
-		result = append(result, &models.Metrics{
+		result = append(result, models.Metrics{
 			ID:    v.Name,
 			MType: v.Type,
 			Delta: nil,
@@ -98,7 +98,7 @@ func (ms *MemStorage) ListMetrics() ([]*models.Metrics, error) {
 		})
 	}
 	for _, v := range ms.CounterMetrics {
-		result = append(result, &models.Metrics{
+		result = append(result, models.Metrics{
 			ID:    v.Name,
 			MType: v.Type,
 			Delta: &v.Value,

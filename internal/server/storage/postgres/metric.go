@@ -24,8 +24,8 @@ func (s *SQLStorage) UpdateMetric(m *models.Metrics) error {
 	return nil
 }
 
-func (s *SQLStorage) UpdateMetricBatch(metrics []*models.Metrics) ([]*models.Metrics, error) {
-	result := make([]*models.Metrics, 0)
+func (s *SQLStorage) UpdateMetricBatch(metrics []models.Metrics) ([]models.Metrics, error) {
+	result := make([]models.Metrics, 0)
 	if len(metrics) == 0 {
 		return result, nil
 	}
@@ -34,8 +34,8 @@ func (s *SQLStorage) UpdateMetricBatch(metrics []*models.Metrics) ([]*models.Met
 		return nil, fmt.Errorf("failed to begin transaction: %w", err)
 	}
 	defer tx.Rollback()
-	gauges := make([]*models.Metrics, 0)
-	counters := make([]*models.Metrics, 0)
+	gauges := make([]models.Metrics, 0)
+	counters := make([]models.Metrics, 0)
 	for _, m := range metrics {
 		switch m.MType {
 		case string(models.TypeGauge):
@@ -78,14 +78,14 @@ func (s *SQLStorage) UpdateMetricBatch(metrics []*models.Metrics) ([]*models.Met
 	if err = tx.Commit(); err != nil {
 		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
-	result = make([]*models.Metrics, len(gauges)+len(counters))
+	result = make([]models.Metrics, len(gauges)+len(counters))
 	result = append(result, gauges...)
 	result = append(result, counters...)
 	return result, nil
 }
 
-func (s *SQLStorage) updateGauges(metrics []*models.Metrics) ([]*models.Metrics, error) {
-	result := make([]*models.Metrics, 0)
+func (s *SQLStorage) updateGauges(metrics []models.Metrics) ([]models.Metrics, error) {
+	result := make([]models.Metrics, 0)
 	if len(metrics) == 0 {
 		return result, nil
 	}
@@ -113,7 +113,7 @@ func (s *SQLStorage) updateGauges(metrics []*models.Metrics) ([]*models.Metrics,
 		if err = rows.Scan(&row.Name, &row.Value); err != nil {
 			return nil, err
 		}
-		result = append(result, &models.Metrics{
+		result = append(result, models.Metrics{
 			MType: string(models.TypeGauge),
 			ID:    row.Name,
 			Delta: nil,
@@ -124,8 +124,8 @@ func (s *SQLStorage) updateGauges(metrics []*models.Metrics) ([]*models.Metrics,
 	return result, nil
 }
 
-func (s *SQLStorage) updateCounters(metrics []*models.Metrics) ([]*models.Metrics, error) {
-	result := make([]*models.Metrics, 0)
+func (s *SQLStorage) updateCounters(metrics []models.Metrics) ([]models.Metrics, error) {
+	result := make([]models.Metrics, 0)
 	if len(metrics) == 0 {
 		return result, nil
 	}
@@ -153,7 +153,7 @@ func (s *SQLStorage) updateCounters(metrics []*models.Metrics) ([]*models.Metric
 		if err = rows.Scan(&row.Name, &row.Value); err != nil {
 			return nil, err
 		}
-		result = append(result, &models.Metrics{
+		result = append(result, models.Metrics{
 			MType: string(models.TypeCounter),
 			ID:    row.Name,
 			Delta: &row.Value,
@@ -184,14 +184,14 @@ func (s *SQLStorage) GetMetric(m *models.Metrics) error {
 	return nil
 }
 
-func (s *SQLStorage) ListMetrics() ([]*models.Metrics, error) {
-	result := make([]*models.Metrics, 0)
+func (s *SQLStorage) ListMetrics() ([]models.Metrics, error) {
+	result := make([]models.Metrics, 0)
 	gauges, err := s.GetGauges()
 	if err != nil {
 		return nil, err
 	}
 	for _, g := range gauges {
-		result = append(result, &models.Metrics{
+		result = append(result, models.Metrics{
 			ID:    g.Name,
 			MType: string(models.TypeGauge),
 			Delta: nil,
@@ -203,7 +203,7 @@ func (s *SQLStorage) ListMetrics() ([]*models.Metrics, error) {
 		return nil, err
 	}
 	for _, c := range counters {
-		result = append(result, &models.Metrics{
+		result = append(result, models.Metrics{
 			ID:    c.Name,
 			MType: string(models.TypeCounter),
 			Delta: &c.Value,

@@ -40,9 +40,9 @@ func (s *MemStorageGaugeTestSuite) TestGauge() {
 }
 
 func (s *MemStorageCounterTestSuite) TestGauges() {
-	gauges := map[string]*models.Gauge{
-		"a": models.NewGauge("a", 3),
-		"b": models.NewGauge("b", 1),
+	gauges := map[string]models.Gauge{
+		"a": *models.NewGauge("a", 3),
+		"b": *models.NewGauge("b", 1),
 	}
 	for _, g := range gauges {
 		err := s.repo.UpdateGauge(g.Name, g.Value)

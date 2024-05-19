@@ -8,12 +8,12 @@ import (
 	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
 )
 
-func (ms *MemStorage) GetCounters() (map[string]*models.Counter, error) {
+func (ms *MemStorage) GetCounters() (map[string]models.Counter, error) {
 	ms.mu.RLock()
 	defer ms.mu.RUnlock()
-	result := make(map[string]*models.Counter)
+	result := make(map[string]models.Counter)
 	for k, v := range ms.CounterMetrics {
-		result[k] = models.CopyCounter(*v)
+		result[k] = *models.CopyCounter(*v)
 	}
 	return result, nil
 }
