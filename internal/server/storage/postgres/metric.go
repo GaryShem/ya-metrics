@@ -24,6 +24,10 @@ func (s *SQLStorage) UpdateMetric(m *models.Metrics) error {
 	default:
 		return models.ErrInvalidMetricType
 	}
+	if err := s.GetMetric(m); err != nil {
+		return err
+	}
+
 	return nil
 }
 
