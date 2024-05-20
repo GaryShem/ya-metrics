@@ -9,6 +9,9 @@ import (
 )
 
 func (s *SQLStorage) UpdateMetric(m *models.Metrics) error {
+	if err := m.ValidateUpdate(); err != nil {
+		return err
+	}
 	switch m.MType {
 	case string(models.TypeGauge):
 		if err := s.UpdateGauge(m.ID, *m.Value); err != nil {
@@ -40,10 +43,10 @@ func (s *SQLStorage) UpdateMetricBatch(metrics []models.Metrics) ([]models.Metri
 		switch m.MType {
 		case string(models.TypeGauge):
 			isDuplicate := false
-			for _, g := range gauges {
-				if g.ID == m.ID {
+			for i := range gauges {
+				if gauges[i].ID == m.ID {
 					isDuplicate = true
-					g.Value = m.Value
+					gauges[i].Value = m.Value
 					break
 				}
 			}
@@ -52,11 +55,11 @@ func (s *SQLStorage) UpdateMetricBatch(metrics []models.Metrics) ([]models.Metri
 			}
 		case string(models.TypeCounter):
 			isDuplicate := false
-			for _, c := range counters {
-				if c.ID == m.ID {
+			for i := range counters {
+				if counters[i].ID == m.ID {
 					isDuplicate = true
-					value := *c.Delta + *m.Delta
-					c.Delta = &value
+					value := *counters[i].Delta + *m.Delta
+					counters[i].Delta = &value
 					break
 				}
 			}
@@ -78,7 +81,7 @@ func (s *SQLStorage) UpdateMetricBatch(metrics []models.Metrics) ([]models.Metri
 	if err = tx.Commit(); err != nil {
 		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
-	result = make([]models.Metrics, len(gauges)+len(counters))
+	result = make([]models.Metrics, 0)
 	result = append(result, gauges...)
 	result = append(result, counters...)
 	return result, nil
@@ -109,7 +112,7 @@ func (s *SQLStorage) updateGauges(metrics []models.Metrics) ([]models.Metrics, e
 		return nil, err
 	}
 	for rows.Next() {
-		row := models.NewGauge("", 0)
+		row := models.Gauge{}
 		if err = rows.Scan(&row.Name, &row.Value); err != nil {
 			return nil, err
 		}

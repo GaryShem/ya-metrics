@@ -17,10 +17,23 @@ type SQLStorage struct {
 	db         *sql.DB
 }
 
-func NewSQLStorage(conn string) *SQLStorage {
-	return &SQLStorage{
+func NewSQLStorage(conn string, reset bool) (*SQLStorage, error) {
+	storage := &SQLStorage{
 		ConnString: conn,
 	}
+	err := storage.Init()
+	if err != nil {
+		defer storage.db.Close()
+		return nil, err
+	}
+	if reset {
+		if err = storage.Reset(); err != nil {
+			defer storage.db.Close()
+			return nil, err
+		}
+
+	}
+	return storage, nil
 }
 
 func (s *SQLStorage) Init() error {
@@ -47,4 +60,16 @@ func (s *SQLStorage) Init() error {
 	return nil
 }
 
-var _ repository.Repository = NewSQLStorage("")
+func (s *SQLStorage) Reset() error {
+	resetGaugesSQL := `TRUNCATE TABLE gauges;`
+	resetCountersSQL := `TRUNCATE TABLE counters;`
+	if _, err := s.db.Exec(resetGaugesSQL); err != nil {
+		return err
+	}
+	if _, err := s.db.Exec(resetCountersSQL); err != nil {
+		return err
+	}
+	return nil
+}
+
+var _ repository.Repository = &SQLStorage{}

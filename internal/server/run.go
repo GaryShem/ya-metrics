@@ -14,11 +14,11 @@ import (
 )
 
 type ServerFlags struct {
-	Address         *string
-	StoreInterval   *int
-	FileStoragePath *string
-	Restore         *bool
-	DBString        *string
+	Address         string
+	StoreInterval   int
+	FileStoragePath string
+	Restore         bool
+	DBString        string
 }
 
 func RunServer(sf *ServerFlags) error {
@@ -26,17 +26,17 @@ func RunServer(sf *ServerFlags) error {
 		return err
 	}
 	var repo repository.Repository
-	if *sf.DBString != "" {
+	if sf.DBString != "" {
 		logging.Log.Infoln("initializing database storage")
-		dbRepo := postgres.NewSQLStorage(*sf.DBString)
-		if err := dbRepo.Init(); err != nil {
+		dbRepo, err := postgres.NewSQLStorage(sf.DBString, true)
+		if err != nil {
 			return err
 		}
 		repo = dbRepo
 	} else {
 		logging.Log.Infoln("initializing memory storage")
-		fs := longterm.NewFileSaver(*sf.FileStoragePath, nil)
-		if sf.Restore != nil && *sf.Restore {
+		fs := longterm.NewFileSaver(sf.FileStoragePath, nil)
+		if sf.Restore {
 			err := fs.LoadMetricsFile()
 			if err != nil {
 				return err
@@ -46,15 +46,15 @@ func RunServer(sf *ServerFlags) error {
 		}
 		repo = fs.MS
 		go func() {
-			_ = fs.SaveMetricsFile(time.Second * time.Duration(*sf.StoreInterval))
+			_ = fs.SaveMetricsFile(time.Second * time.Duration(sf.StoreInterval))
 		}()
 	}
 	r, err := handlers.MetricsRouter(repo)
 	if err != nil {
 		return err
 	}
-	log.Printf("Server listening on %v\n", *sf.Address)
-	err = http.ListenAndServe(*sf.Address, r)
+	log.Printf("Server listening on %v\n", sf.Address)
+	err = http.ListenAndServe(sf.Address, r)
 	if err != nil {
 		return err
 	}
