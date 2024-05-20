@@ -10,31 +10,37 @@ import (
 	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
 )
 
-type SqlStorageMetricsTestSuite struct {
+type SQLStorageMetricsTestSuite struct {
 	suite.Suite
-	repo repository.Repository
+	repo       repository.Repository
+	sqlStorage *SQLStorage
 }
 
-func (s *SqlStorageMetricsTestSuite) SetupTest() {
+func (s *SQLStorageMetricsTestSuite) SetupTest() {
 	err := logging.InitializeZapLogger("Info")
 	if err != nil {
 		panic(err)
 	}
-}
-
-func (s *SqlStorageMetricsTestSuite) BeforeTest(suiteName, testName string) {
 	repo, err := NewSQLStorage("host=localhost user=postgres password=1231 dbname=postgres sslmode=disable", true)
 	if err != nil {
 		panic(err)
 	}
 	s.repo = repo
+	s.sqlStorage = repo
+}
+
+func (s *SQLStorageMetricsTestSuite) BeforeTest(_, _ string) {
+	err := s.sqlStorage.Reset()
+	if err != nil {
+		panic(err)
+	}
 }
 
 func TestMemStorageTestSuite(t *testing.T) {
-	suite.Run(t, new(SqlStorageMetricsTestSuite))
+	suite.Run(t, new(SQLStorageMetricsTestSuite))
 }
 
-func (s *SqlStorageMetricsTestSuite) TestUpdateMetricInvalidMetricID() {
+func (s *SQLStorageMetricsTestSuite) TestUpdateMetricInvalidMetricID() {
 	m := &models.Metrics{
 		ID:    "",
 		MType: string(models.TypeCounter),
@@ -45,7 +51,7 @@ func (s *SqlStorageMetricsTestSuite) TestUpdateMetricInvalidMetricID() {
 	s.Require().ErrorIs(err, models.ErrInvalidMetricID)
 }
 
-func (s *SqlStorageMetricsTestSuite) TestUpdateMetricInvalidMetricType() {
+func (s *SQLStorageMetricsTestSuite) TestUpdateMetricInvalidMetricType() {
 	m := &models.Metrics{
 		ID:    "foo",
 		MType: "bar",
@@ -56,7 +62,7 @@ func (s *SqlStorageMetricsTestSuite) TestUpdateMetricInvalidMetricType() {
 	s.Require().ErrorIs(err, models.ErrInvalidMetricType)
 }
 
-func (s *SqlStorageMetricsTestSuite) TestUpdateMetricInvalidCounterValue() {
+func (s *SQLStorageMetricsTestSuite) TestUpdateMetricInvalidCounterValue() {
 	m := &models.Metrics{
 		ID:    "foo",
 		MType: string(models.TypeCounter),
@@ -67,7 +73,7 @@ func (s *SqlStorageMetricsTestSuite) TestUpdateMetricInvalidCounterValue() {
 	s.Require().ErrorIs(err, models.ErrInvalidMetricValue)
 }
 
-func (s *SqlStorageMetricsTestSuite) TestUpdateMetricInvalidGaugeValue() {
+func (s *SQLStorageMetricsTestSuite) TestUpdateMetricInvalidGaugeValue() {
 	m := &models.Metrics{
 		ID:    "foo",
 		MType: string(models.TypeGauge),
@@ -78,7 +84,7 @@ func (s *SqlStorageMetricsTestSuite) TestUpdateMetricInvalidGaugeValue() {
 	s.Require().ErrorIs(err, models.ErrInvalidMetricValue)
 }
 
-func (s *SqlStorageMetricsTestSuite) TestMetricValidGauge() {
+func (s *SQLStorageMetricsTestSuite) TestMetricValidGauge() {
 	value := 3.14
 	m := &models.Metrics{
 		ID:    "foo",
@@ -102,7 +108,7 @@ func (s *SqlStorageMetricsTestSuite) TestMetricValidGauge() {
 	s.EqualValues(m, m2)
 }
 
-func (s *SqlStorageMetricsTestSuite) TestMetricValidCounter() {
+func (s *SQLStorageMetricsTestSuite) TestMetricValidCounter() {
 	value := int64(42)
 	m := &models.Metrics{
 		ID:    "foo",
@@ -127,17 +133,17 @@ func (s *SqlStorageMetricsTestSuite) TestMetricValidCounter() {
 	s.EqualValues(m, m2)
 }
 
-func (s *SqlStorageMetricsTestSuite) TestDuplicateGaugeBatch() {
+func (s *SQLStorageMetricsTestSuite) TestDuplicateGaugeBatch() {
 	value1 := 3.14
 	value2 := 42.14
 	m := []models.Metrics{
-		models.Metrics{
+		{
 			ID:    "foo",
 			MType: string(models.TypeGauge),
 			Delta: nil,
 			Value: &value1,
 		},
-		models.Metrics{
+		{
 			ID:    "foo",
 			MType: string(models.TypeGauge),
 			Delta: nil,
@@ -164,18 +170,18 @@ func (s *SqlStorageMetricsTestSuite) TestDuplicateGaugeBatch() {
 	s.EqualValues(m[len(m)-1], m2)
 }
 
-func (s *SqlStorageMetricsTestSuite) TestDuplicateCounterBatch() {
+func (s *SQLStorageMetricsTestSuite) TestDuplicateCounterBatch() {
 	delta1 := int64(42)
 	deltaDouble := int64(100)
 	delta2 := int64(142)
 	m := []models.Metrics{
-		models.Metrics{
+		{
 			ID:    "foo",
 			MType: string(models.TypeCounter),
 			Delta: &delta1,
 			Value: nil,
 		},
-		models.Metrics{
+		{
 			ID:    "foo",
 			MType: string(models.TypeCounter),
 			Delta: &deltaDouble,
