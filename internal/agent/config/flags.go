@@ -1,11 +1,11 @@
-package main
+package config
 
 import (
 	"flag"
 
 	"github.com/caarlos0/env/v6"
 
-	"github.com/GaryShem/ya-metrics.git/internal/agent"
+	"github.com/GaryShem/ya-metrics.git/internal/agent/app"
 )
 
 type envConfig struct {
@@ -14,7 +14,7 @@ type envConfig struct {
 	PollInterval   int    `env:"POLL_INTERVAL"`
 }
 
-func ParseFlags(af *agent.AgentFlags) {
+func ParseFlags(af *app.AgentFlags) {
 	af.Address = flag.String("a", "localhost:8080", "server address:port")
 	af.ReportInterval = flag.Int("r", 10, "metric reporting interval, seconds int")
 	af.PollInterval = flag.Int("p", 2, "metric polling interval, seconds int")

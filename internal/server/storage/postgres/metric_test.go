@@ -5,6 +5,7 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
+	"github.com/GaryShem/ya-metrics.git/internal/server/config"
 	"github.com/GaryShem/ya-metrics.git/internal/server/storage/repository"
 	"github.com/GaryShem/ya-metrics.git/internal/shared/logging"
 	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
@@ -14,6 +15,7 @@ type SQLStorageMetricsTestSuite struct {
 	suite.Suite
 	repo       repository.Repository
 	sqlStorage *SQLStorage
+	connString string
 }
 
 func (s *SQLStorageMetricsTestSuite) SetupTest() {
@@ -21,7 +23,7 @@ func (s *SQLStorageMetricsTestSuite) SetupTest() {
 	if err != nil {
 		panic(err)
 	}
-	repo, err := NewSQLStorage("host=localhost user=postgres password=1231 dbname=postgres sslmode=disable", true)
+	repo, err := NewSQLStorage(s.connString, true)
 	if err != nil {
 		panic(err)
 	}
@@ -37,7 +39,14 @@ func (s *SQLStorageMetricsTestSuite) BeforeTest(_, _ string) {
 }
 
 func TestMemStorageTestSuite(t *testing.T) {
-	suite.Run(t, new(SQLStorageMetricsTestSuite))
+	sf := config.ServerFlags{}
+	config.ParseFlags(&sf)
+	if sf.DBString == "" {
+		t.Skip("No db string provided")
+	}
+	suite.Run(t, &SQLStorageMetricsTestSuite{
+		connString: sf.DBString,
+	})
 }
 
 func (s *SQLStorageMetricsTestSuite) TestUpdateMetricInvalidMetricID() {

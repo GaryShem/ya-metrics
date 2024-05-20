@@ -1,4 +1,4 @@
-package agent
+package app
 
 import (
 	"net/http/httptest"
@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
+	"github.com/GaryShem/ya-metrics.git/internal/agent/metrics"
 	"github.com/GaryShem/ya-metrics.git/internal/server/handlers"
 	"github.com/GaryShem/ya-metrics.git/internal/server/storage/memorystorage"
 	"github.com/GaryShem/ya-metrics.git/internal/server/storage/repository"
@@ -51,11 +52,11 @@ func TestAgentSuite(t *testing.T) {
 }
 
 func (s *AgentSuite) TestAgentMetrics() {
-	err := RunAgent(s.af, SupportedRuntimeMetrics(),
+	err := RunAgent(s.af, metrics.SupportedRuntimeMetrics(),
 		true, false, false)
 	s.Require().NoError(err)
 
-	for _, m := range SupportedRuntimeMetrics() {
+	for _, m := range metrics.SupportedRuntimeMetrics() {
 		g, err := s.repo.GetGauge(m)
 		s.Require().NoError(err)
 		s.Require().NotNil(g)

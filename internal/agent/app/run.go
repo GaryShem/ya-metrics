@@ -1,4 +1,4 @@
-package agent
+package app
 
 import (
 	"bytes"
@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-resty/resty/v2"
 
+	"github.com/GaryShem/ya-metrics.git/internal/agent/metrics"
 	"github.com/GaryShem/ya-metrics.git/internal/shared/logging"
 )
 
@@ -20,7 +21,7 @@ type AgentFlags struct {
 	PollInterval   *int
 }
 
-func CollectMetrics(mc *MetricCollector, interval time.Duration, ec chan error) {
+func CollectMetrics(mc *metrics.MetricCollector, interval time.Duration, ec chan error) {
 	timer := time.NewTicker(interval)
 	defer timer.Stop()
 	for {
@@ -33,7 +34,7 @@ func CollectMetrics(mc *MetricCollector, interval time.Duration, ec chan error) 
 	}
 }
 
-func SendMetrics(mc *MetricCollector, host string, sendOnce bool, ignoreSendError bool,
+func SendMetrics(mc *metrics.MetricCollector, host string, sendOnce bool, ignoreSendError bool,
 	gzipRequest bool, interval time.Duration, ec chan error) {
 	timer := time.NewTicker(interval)
 	defer timer.Stop()
@@ -73,7 +74,7 @@ func wrapGzipRequest(r *resty.Request, mJSON []byte) error {
 	return nil
 }
 
-func sendMetricsBatch(mc *MetricCollector, host string, gzipRequest bool) error {
+func sendMetricsBatch(mc *metrics.MetricCollector, host string, gzipRequest bool) error {
 	client := resty.New()
 	metrics, errDump := mc.DumpMetrics()
 	logging.Log.Infoln(host)
@@ -130,7 +131,7 @@ func RunAgent(af *AgentFlags, runtimeMetrics []string, sendOnce bool, ignoreSend
 		return fmt.Errorf("error initializing logger: %w", err)
 	}
 	logging.Log.Infoln("agent started")
-	metrics := NewMetricCollector(runtimeMetrics)
+	metrics := metrics.NewMetricCollector(runtimeMetrics)
 	logging.Log.Infoln("Server Address:", *af.Address)
 
 	pollInterval := time.Second * time.Duration(*af.PollInterval)

@@ -1,12 +1,18 @@
-package main
+package config
 
 import (
 	"flag"
 
 	"github.com/caarlos0/env/v6"
-
-	"github.com/GaryShem/ya-metrics.git/internal/server"
 )
+
+type ServerFlags struct {
+	Address         string
+	StoreInterval   int
+	FileStoragePath string
+	Restore         bool
+	DBString        string
+}
 
 type envConfig struct {
 	Address         string `env:"ADDRESS"`
@@ -24,7 +30,7 @@ type flagConfig struct {
 	DBString        *string
 }
 
-func ParseFlags(sf *server.ServerFlags) {
+func ParseFlags(sf *ServerFlags) {
 	flags := &flagConfig{
 		Address:         flag.String("a", "localhost:8080", "server address:port"),
 		StoreInterval:   flag.Int("i", 300, "metric saving interval"),

@@ -1,10 +1,11 @@
-package server
+package app
 
 import (
 	"log"
 	"net/http"
 	"time"
 
+	"github.com/GaryShem/ya-metrics.git/internal/server/config"
 	"github.com/GaryShem/ya-metrics.git/internal/server/handlers"
 	"github.com/GaryShem/ya-metrics.git/internal/server/longterm"
 	"github.com/GaryShem/ya-metrics.git/internal/server/storage/memorystorage"
@@ -13,15 +14,7 @@ import (
 	"github.com/GaryShem/ya-metrics.git/internal/shared/logging"
 )
 
-type ServerFlags struct {
-	Address         string
-	StoreInterval   int
-	FileStoragePath string
-	Restore         bool
-	DBString        string
-}
-
-func RunServer(sf *ServerFlags) error {
+func RunServer(sf *config.ServerFlags) error {
 	if err := logging.InitializeZapLogger("Info"); err != nil {
 		return err
 	}
