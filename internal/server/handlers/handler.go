@@ -1,13 +1,13 @@
 package handlers
 
 import (
-	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
+	"github.com/GaryShem/ya-metrics.git/internal/server/storage/repository"
 )
 
 type RepoHandler struct {
-	repo models.Repository
+	repo repository.Repository
 }
 
-func NewHandler(repo models.Repository) *RepoHandler {
+func NewHandler(repo repository.Repository) *RepoHandler {
 	return &RepoHandler{repo: repo}
 }

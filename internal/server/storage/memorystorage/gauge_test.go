@@ -5,12 +5,13 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
+	"github.com/GaryShem/ya-metrics.git/internal/server/storage/repository"
 	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
 )
 
 type MemStorageGaugeTestSuite struct {
 	suite.Suite
-	repo models.Repository
+	repo repository.Repository
 }
 
 func (s *MemStorageGaugeTestSuite) SetupSuite() {
@@ -27,14 +28,15 @@ func (s *MemStorageGaugeTestSuite) TestGauge() {
 		models.NewGauge("foo", 4.14),
 	}
 	for _, gauge := range gauges {
-		s.repo.UpdateGauge(gauge.Name, gauge.Value)
+		err := s.repo.UpdateGauge(gauge.Name, gauge.Value)
+		s.Require().NoError(err)
 		rv, err := s.repo.GetGauge(gauge.Name)
 		s.Require().NoError(err)
 		s.InEpsilon(gauge.Value, rv.Value, 0.001)
 	}
 
 	_, err := s.repo.GetGauge("bar")
-	s.Require().ErrorIs(err, ErrMetricNotFound)
+	s.Require().ErrorIs(err, repository.ErrMetricNotFound)
 }
 
 func (s *MemStorageCounterTestSuite) TestGauges() {
@@ -43,7 +45,10 @@ func (s *MemStorageCounterTestSuite) TestGauges() {
 		"b": models.NewGauge("b", 1),
 	}
 	for _, g := range gauges {
-		s.repo.UpdateGauge(g.Name, g.Value)
+		err := s.repo.UpdateGauge(g.Name, g.Value)
+		s.Require().NoError(err)
 	}
-	s.EqualValues(gauges, s.repo.GetGauges())
+	value, err := s.repo.GetGauges()
+	s.Require().NoError(err)
+	s.EqualValues(gauges, value)
 }

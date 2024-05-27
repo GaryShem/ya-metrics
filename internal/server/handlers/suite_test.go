@@ -7,13 +7,13 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/GaryShem/ya-metrics.git/internal/server/storage/memorystorage"
-	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
+	"github.com/GaryShem/ya-metrics.git/internal/server/storage/repository"
 )
 
 type MetricHandlerSuite struct {
 	suite.Suite
 	server *httptest.Server
-	repo   models.Repository
+	repo   repository.Repository
 }
 
 func (s *MetricHandlerSuite) BeforeTest(suiteName, testName string) {

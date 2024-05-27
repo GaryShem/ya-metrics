@@ -55,7 +55,11 @@ func (h *RepoHandler) GetCounter(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *RepoHandler) ListMetrics(w http.ResponseWriter, _ *http.Request) {
-	jsonResponse, err := json.Marshal(h.repo)
+	metrics, err := h.repo.ListMetrics()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	jsonResponse, err := json.Marshal(metrics)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("could not marshal json: %v", err.Error()), http.StatusInternalServerError)
 	}

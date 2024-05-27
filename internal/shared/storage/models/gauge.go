@@ -8,7 +8,7 @@ type Gauge struct {
 
 func NewGauge(name string, value float64) *Gauge {
 	return &Gauge{
-		Type:  "gauge",
+		Type:  string(TypeGauge),
 		Name:  name,
 		Value: value,
 	}
@@ -16,7 +16,7 @@ func NewGauge(name string, value float64) *Gauge {
 
 func CopyGauge(original Gauge) *Gauge {
 	return &Gauge{
-		Type:  "gauge",
+		Type:  original.Type,
 		Name:  original.Name,
 		Value: original.Value,
 	}

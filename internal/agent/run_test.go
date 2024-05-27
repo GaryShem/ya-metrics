@@ -9,13 +9,13 @@ import (
 
 	"github.com/GaryShem/ya-metrics.git/internal/server/handlers"
 	"github.com/GaryShem/ya-metrics.git/internal/server/storage/memorystorage"
+	"github.com/GaryShem/ya-metrics.git/internal/server/storage/repository"
 	"github.com/GaryShem/ya-metrics.git/internal/shared/logging"
-	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
 )
 
 type AgentSuite struct {
 	suite.Suite
-	repo   models.Repository
+	repo   repository.Repository
 	server *httptest.Server
 	af     *AgentFlags
 }

@@ -1,14 +1,12 @@
 package memorystorage
 
 import (
-	"errors"
 	"sync"
 	"time"
 
+	"github.com/GaryShem/ya-metrics.git/internal/server/storage/repository"
 	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
 )
-
-var ErrMetricNotFound = errors.New("metric not found")
 
 type MemStorage struct {
 	GaugeMetrics   map[string]*models.Gauge   `json:"gaugeMetrics"`
@@ -24,4 +22,4 @@ func NewMemStorage() *MemStorage {
 	}
 }
 
-var _ models.Repository = &MemStorage{}
+var _ repository.Repository = &MemStorage{}
