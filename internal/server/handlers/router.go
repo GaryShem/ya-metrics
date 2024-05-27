@@ -18,8 +18,10 @@ func MetricsRouter(ms repository.Repository) (chi.Router, error) {
 	h := NewHandler(ms)
 	r.Use(middleware.RequestGzipper)
 	r.Use(middleware.RequestLogger)
+
 	r.Route(`/`, func(r chi.Router) {
 		r.Get(`/ping`, h.Ping)
+		r.Post(`/updates/`, h.UpdateMetricBatch)
 
 		r.Route(`/update`, func(r chi.Router) {
 			r.Post(`/`, h.UpdateMetricJSON)

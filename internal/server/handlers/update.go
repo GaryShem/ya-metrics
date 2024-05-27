@@ -132,3 +132,42 @@ func (h *RepoHandler) UpdateMetricJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "could not write UpdateMetricJSON response, contact server admins", http.StatusInternalServerError)
 	}
 }
+
+func (h *RepoHandler) UpdateMetricBatch(w http.ResponseWriter, r *http.Request) {
+	// make sure metrics are passed via POST
+	if r.Method != http.MethodPost {
+		http.Error(w, "only POST is accepted", http.StatusBadRequest)
+		return
+	}
+
+	// check content type
+	if r.Header.Get("Content-Type") != "application/json" {
+		http.Error(w, "invalid content type", http.StatusNotFound)
+	}
+
+	// deserialize request
+	metrics := make([]*models.Metrics, 0)
+	dec := json.NewDecoder(r.Body)
+	if err := dec.Decode(&metrics); err != nil {
+		logging.Log.Debug("error decoding request json", zap.Error(err))
+		http.Error(w, "error decoding request json", http.StatusBadRequest)
+	}
+
+	// update repository
+	metrics, err := h.repo.UpdateMetricBatch(metrics)
+	if err != nil {
+		logging.Log.Debug("error updating metric", zap.Error(err))
+		http.Error(w, fmt.Sprintf("error updating metric, %v", err), http.StatusInternalServerError)
+	}
+
+	// serialize updated metric structure
+	response, err := json.Marshal(metrics)
+	if err != nil {
+		logging.Log.Debug("error marshaling response", zap.Error(err))
+		http.Error(w, "error marshaling response", http.StatusInternalServerError)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if _, err = w.Write(response); err != nil {
+		http.Error(w, "could not write UpdateMetricJSON response, contact server admins", http.StatusInternalServerError)
+	}
+}

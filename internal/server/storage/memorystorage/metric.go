@@ -36,6 +36,33 @@ func (ms *MemStorage) UpdateMetric(m *models.Metrics) error {
 	}
 }
 
+func (ms *MemStorage) UpdateMetricBatch(metrics []*models.Metrics) ([]*models.Metrics, error) {
+	for _, m := range metrics {
+		if err := ms.UpdateMetric(m); err != nil {
+			return nil, err
+		}
+	}
+	result := make([]*models.Metrics, 0)
+	for _, m := range metrics {
+		isDuplicate := false
+		for _, r := range result {
+			if r.MType == m.MType && r.ID == m.ID {
+				isDuplicate = true
+				break
+			}
+		}
+		if isDuplicate {
+			continue
+		}
+		err := ms.GetMetric(m)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, m)
+	}
+	return result, nil
+}
+
 func (ms *MemStorage) GetMetric(m *models.Metrics) error {
 	if err := m.ValidateGet(); err != nil {
 		return err
