@@ -8,6 +8,7 @@ import (
 	"github.com/GaryShem/ya-metrics.git/internal/server/handlers"
 	"github.com/GaryShem/ya-metrics.git/internal/server/longterm"
 	"github.com/GaryShem/ya-metrics.git/internal/server/storage/memorystorage"
+	"github.com/GaryShem/ya-metrics.git/internal/server/storage/postgres"
 	"github.com/GaryShem/ya-metrics.git/internal/shared/logging"
 )
 
@@ -16,6 +17,7 @@ type ServerFlags struct {
 	StoreInterval   *int
 	FileStoragePath *string
 	Restore         *bool
+	DBString        *string
 }
 
 func RunServer(sf *ServerFlags) error {
@@ -34,6 +36,9 @@ func RunServer(sf *ServerFlags) error {
 	go func() {
 		_ = fs.SaveMetricsFile(time.Second * time.Duration(*sf.StoreInterval))
 	}()
+	if *sf.DBString != "" {
+		postgres.SQLStorage = postgres.NewPostgreSQLStorage(*sf.DBString)
+	}
 	r, err := handlers.MetricsRouter(fs.MS)
 	if err != nil {
 		return err

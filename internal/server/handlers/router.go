@@ -19,6 +19,8 @@ func MetricsRouter(ms models.Repository) (chi.Router, error) {
 	r.Use(middleware.RequestGzipper)
 	r.Use(middleware.RequestLogger)
 	r.Route(`/`, func(r chi.Router) {
+		r.Get(`/ping`, h.Ping)
+
 		r.Route(`/update`, func(r chi.Router) {
 			r.Post(`/`, h.UpdateMetricJSON)
 			r.Get(`/{metricType}/{metricName}/{metricValue}`, h.UpdateMetric)
