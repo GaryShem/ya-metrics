@@ -42,9 +42,9 @@ func (s *MemStorageCounterTestSuite) TestCounter() {
 }
 
 func (s *MemStorageCounterTestSuite) TestCounters() {
-	counters := map[string]*models.Counter{
-		"a": models.NewCounter("a", 1),
-		"b": models.NewCounter("b", 1),
+	counters := map[string]models.Counter{
+		"a": *models.NewCounter("a", 1),
+		"b": *models.NewCounter("b", 1),
 	}
 	for _, c := range counters {
 		err := s.repo.UpdateCounter(c.Name, c.Value)

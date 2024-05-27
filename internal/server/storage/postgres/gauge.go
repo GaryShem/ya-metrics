@@ -5,9 +5,9 @@ import (
 	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
 )
 
-func (s *SQLStorage) GetGauges() (map[string]*models.Gauge, error) {
+func (s *SQLStorage) GetGauges() (map[string]models.Gauge, error) {
 	logging.Log.Infoln("Getting all SQL gauges")
-	result := make(map[string]*models.Gauge)
+	result := make(map[string]models.Gauge)
 	queryTemplate := `SELECT * FROM gauges`
 	res, err := s.db.Query(queryTemplate)
 	if err != nil {
@@ -23,6 +23,7 @@ func (s *SQLStorage) GetGauges() (map[string]*models.Gauge, error) {
 		if err != nil {
 			return nil, err
 		}
+		result[gauge.Name] = *gauge
 	}
 
 	err = res.Close()

@@ -8,12 +8,12 @@ import (
 	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
 )
 
-func (ms *MemStorage) GetGauges() (map[string]*models.Gauge, error) {
+func (ms *MemStorage) GetGauges() (map[string]models.Gauge, error) {
 	ms.mu.RLock()
 	defer ms.mu.RUnlock()
-	result := make(map[string]*models.Gauge)
+	result := make(map[string]models.Gauge)
 	for k, v := range ms.GaugeMetrics {
-		result[k] = models.CopyGauge(*v)
+		result[k] = *models.CopyGauge(*v)
 	}
 	return result, nil
 }

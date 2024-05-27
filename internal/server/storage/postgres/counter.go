@@ -5,9 +5,9 @@ import (
 	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
 )
 
-func (s *SQLStorage) GetCounters() (map[string]*models.Counter, error) {
+func (s *SQLStorage) GetCounters() (map[string]models.Counter, error) {
 	logging.Log.Infoln("Getting all SQL counters")
-	result := make(map[string]*models.Counter)
+	result := make(map[string]models.Counter)
 	queryTemplate := `SELECT * FROM counters`
 	res, err := s.db.Query(queryTemplate)
 	if err != nil {

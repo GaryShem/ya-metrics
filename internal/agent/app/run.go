@@ -1,4 +1,4 @@
-package agent
+package app
 
 import (
 	"bytes"
@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-resty/resty/v2"
 
+	"github.com/GaryShem/ya-metrics.git/internal/agent/metrics"
 	"github.com/GaryShem/ya-metrics.git/internal/shared/logging"
 )
 
@@ -20,7 +21,7 @@ type AgentFlags struct {
 	PollInterval   *int
 }
 
-func CollectMetrics(mc *MetricCollector, interval time.Duration, ec chan error) {
+func CollectMetrics(mc *metrics.MetricCollector, interval time.Duration, ec chan error) {
 	timer := time.NewTicker(interval)
 	defer timer.Stop()
 	for {
@@ -33,7 +34,7 @@ func CollectMetrics(mc *MetricCollector, interval time.Duration, ec chan error) 
 	}
 }
 
-func SendMetrics(mc *MetricCollector, host string, sendOnce bool, ignoreSendError bool,
+func SendMetrics(mc *metrics.MetricCollector, host string, sendOnce bool, ignoreSendError bool,
 	gzipRequest bool, interval time.Duration, ec chan error) {
 	timer := time.NewTicker(interval)
 	defer timer.Stop()
@@ -73,45 +74,7 @@ func wrapGzipRequest(r *resty.Request, mJSON []byte) error {
 	return nil
 }
 
-func sendMetrics(mc *MetricCollector, host string, gzipRequest bool) error {
-	client := resty.New()
-	metrics, errDump := mc.DumpMetrics()
-	logging.Log.Infoln(host)
-	if errDump != nil {
-		return fmt.Errorf("error dumping metrics: %w", errDump)
-	}
-	url := "http://{host}/update"
-	for _, m := range metrics {
-		mJSON, err := json.Marshal(m)
-		if err != nil {
-			return fmt.Errorf("error marshalling metric: %w", err)
-		}
-		request := client.R().SetPathParam("host", host).
-			SetHeader("Content-Type", "application/json")
-		if gzipRequest {
-			err = wrapGzipRequest(request, mJSON)
-			if err != nil {
-				return fmt.Errorf("error gzipping metric: %w", err)
-			}
-		} else {
-			request.SetBody(mJSON)
-		}
-		res, err := request.Post(url)
-		if err != nil {
-			if res != nil {
-				return fmt.Errorf("error sending metric, response is not nil: %w, %d %s", err, res.StatusCode(), res.String())
-			} else {
-				return fmt.Errorf("error sending metric, response is nil: %w", err)
-			}
-		}
-		if res.StatusCode() != http.StatusOK {
-			return fmt.Errorf("status code not 200: %d %s", res.StatusCode(), res.String())
-		}
-	}
-	return nil
-}
-
-func sendMetricsBatch(mc *MetricCollector, host string, gzipRequest bool) error {
+func sendMetricsBatch(mc *metrics.MetricCollector, host string, gzipRequest bool) error {
 	client := resty.New()
 	metrics, errDump := mc.DumpMetrics()
 	logging.Log.Infoln(host)
@@ -133,7 +96,7 @@ func sendMetricsBatch(mc *MetricCollector, host string, gzipRequest bool) error 
 	} else {
 		request.SetBody(mJSON)
 	}
-	res, err := request.Post(url)
+	res, err := trySendMetricsRetry(request, url)
 	if err != nil {
 		if res != nil {
 			return fmt.Errorf("error sending metric, response is not nil: %w, %d %s", err, res.StatusCode(), res.String())
@@ -147,12 +110,28 @@ func sendMetricsBatch(mc *MetricCollector, host string, gzipRequest bool) error 
 	return nil
 }
 
+func trySendMetricsRetry(r *resty.Request, url string) (*resty.Response, error) {
+	for timeout := range []int{1, 3, 5, -1} {
+		res, err := r.Post(url)
+		if err == nil {
+			return res, err
+		}
+		if timeout < 0 {
+			return res, err
+		}
+		if res != nil && res.StatusCode() == 0 {
+			time.Sleep(time.Second * time.Duration(timeout))
+		}
+	}
+	return nil, fmt.Errorf("timeout should end with <0")
+}
+
 func RunAgent(af *AgentFlags, runtimeMetrics []string, sendOnce bool, ignoreSendError bool, gzipRequest bool) error {
 	if err := logging.InitializeZapLogger("Info"); err != nil {
 		return fmt.Errorf("error initializing logger: %w", err)
 	}
 	logging.Log.Infoln("agent started")
-	metrics := NewMetricCollector(runtimeMetrics)
+	metrics := metrics.NewMetricCollector(runtimeMetrics)
 	logging.Log.Infoln("Server Address:", *af.Address)
 
 	pollInterval := time.Second * time.Duration(*af.PollInterval)

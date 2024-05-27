@@ -14,7 +14,7 @@ import (
 )
 
 func (h *RepoHandler) UpdateGauge(w http.ResponseWriter, r *http.Request) {
-	metricType := "gauge"
+	metricType := models.TypeGauge
 	// get metric name
 	metricName := chi.URLParam(r, "metricName")
 	if metricName == "" {
@@ -45,7 +45,7 @@ func (h *RepoHandler) UpdateGauge(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *RepoHandler) UpdateCounter(w http.ResponseWriter, r *http.Request) {
-	metricType := "counter"
+	metricType := models.TypeCounter
 	// get metric name
 	metricName := chi.URLParam(r, "metricName")
 	if metricName == "" {
@@ -81,14 +81,15 @@ func (h *RepoHandler) UpdateMetric(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "only POST is accepted", http.StatusBadRequest)
 		return
 	}
-	metricType := chi.URLParam(r, "metricType")
-	if metricType == "" {
+	metricTypeStr := chi.URLParam(r, "metricType")
+	if metricTypeStr == "" {
 		http.Error(w, "metric type is empty", http.StatusNotFound)
 	}
+	metricType := models.MetricType(metricTypeStr)
 	switch metricType {
-	case string(models.TypeCounter):
+	case models.TypeCounter:
 		h.UpdateCounter(w, r)
-	case string(models.TypeGauge):
+	case models.TypeGauge:
 		h.UpdateGauge(w, r)
 	default:
 		http.Error(w, fmt.Sprintf("unknown metric type %v", metricType), http.StatusBadRequest)
@@ -111,20 +112,20 @@ func (h *RepoHandler) UpdateMetricJSON(w http.ResponseWriter, r *http.Request) {
 	metric := &models.Metrics{}
 	dec := json.NewDecoder(r.Body)
 	if err := dec.Decode(&metric); err != nil {
-		logging.Log.Debug("error decoding request json", zap.Error(err))
+		logging.Log.Errorln("error decoding request json", zap.Error(err))
 		http.Error(w, "error decoding request json", http.StatusBadRequest)
 	}
 
 	// update repository
 	if err := h.repo.UpdateMetric(metric); err != nil {
-		logging.Log.Debug("error updating metric", zap.Error(err))
+		logging.Log.Errorln("error updating metric", zap.Error(err))
 		http.Error(w, fmt.Sprintf("error updating metric, %v", err), http.StatusInternalServerError)
 	}
 
 	// serialize updated metric structure
 	response, err := json.Marshal(metric)
 	if err != nil {
-		logging.Log.Debug("error marshaling response", zap.Error(err))
+		logging.Log.Errorln("error marshaling response", zap.Error(err))
 		http.Error(w, "error marshaling response", http.StatusInternalServerError)
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -146,24 +147,24 @@ func (h *RepoHandler) UpdateMetricBatch(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// deserialize request
-	metrics := make([]*models.Metrics, 0)
+	metrics := make([]models.Metrics, 0)
 	dec := json.NewDecoder(r.Body)
 	if err := dec.Decode(&metrics); err != nil {
-		logging.Log.Debug("error decoding request json", zap.Error(err))
+		logging.Log.Errorln("error decoding request json", zap.Error(err))
 		http.Error(w, "error decoding request json", http.StatusBadRequest)
 	}
 
 	// update repository
 	metrics, err := h.repo.UpdateMetricBatch(metrics)
 	if err != nil {
-		logging.Log.Debug("error updating metric", zap.Error(err))
+		logging.Log.Errorln("error updating metric", zap.Error(err))
 		http.Error(w, fmt.Sprintf("error updating metric, %v", err), http.StatusInternalServerError)
 	}
 
 	// serialize updated metric structure
 	response, err := json.Marshal(metrics)
 	if err != nil {
-		logging.Log.Debug("error marshaling response", zap.Error(err))
+		logging.Log.Errorln("error marshaling response", zap.Error(err))
 		http.Error(w, "error marshaling response", http.StatusInternalServerError)
 	}
 	w.Header().Set("Content-Type", "application/json")
