@@ -14,7 +14,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	af := new(app.AgentFlags)
+	af := new(config.AgentFlags)
 	config.ParseFlags(af)
 	logging.Log.Infoln("client starting with flags",
 		"host", *af.Address,

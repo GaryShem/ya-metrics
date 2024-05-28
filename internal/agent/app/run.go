@@ -14,16 +14,11 @@ import (
 
 	"github.com/go-resty/resty/v2"
 
+	"github.com/GaryShem/ya-metrics.git/internal/agent/config"
 	"github.com/GaryShem/ya-metrics.git/internal/agent/metrics"
 	"github.com/GaryShem/ya-metrics.git/internal/shared/logging"
+	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
 )
-
-type AgentFlags struct {
-	Address        *string
-	ReportInterval *int
-	PollInterval   *int
-	HashKey        *string
-}
 
 func CollectMetrics(mc *metrics.MetricCollector, interval time.Duration, ec chan error) {
 	timer := time.NewTicker(interval)
@@ -38,13 +33,30 @@ func CollectMetrics(mc *metrics.MetricCollector, interval time.Duration, ec chan
 	}
 }
 
+func CollectAdditionalMetrics(mc *metrics.MetricCollector, interval time.Duration, ec chan error) {
+	timer := time.NewTicker(interval)
+	defer timer.Stop()
+	for {
+		<-timer.C
+		err := mc.CollectAdditionalMetrics()
+		if err != nil {
+			ec <- err
+			return
+		}
+	}
+}
+
 func SendMetrics(mc *metrics.MetricCollector, host string, sendOnce bool, ignoreSendError bool,
 	gzipRequest bool, interval time.Duration, keySHA string, ec chan error) {
 	timer := time.NewTicker(interval)
 	defer timer.Stop()
 	for {
 		<-timer.C
-		err := sendMetricsBatch(mc, host, gzipRequest, keySHA)
+		metricsDump, err := mc.DumpMetrics()
+		if err != nil {
+			return
+		}
+		err = sendMetricsBatch(metricsDump, host, gzipRequest, keySHA)
 		if err != nil {
 			if ignoreSendError {
 				logging.Log.Warnln("Ignore send error:", err)
@@ -81,13 +93,9 @@ func wrapGzipRequest(r *resty.Request, gzippedBody []byte) {
 	r.Header.Add("Accept-Encoding", "gzip")
 }
 
-func sendMetricsBatch(mc *metrics.MetricCollector, host string, gzipRequest bool, keySHA string) error {
+func sendMetricsBatch(metrics []*models.Metrics, host string, gzipRequest bool, keySHA string) error {
 	client := resty.New()
-	metrics, errDump := mc.DumpMetrics()
 	logging.Log.Infoln(host)
-	if errDump != nil {
-		return fmt.Errorf("error dumping metrics: %w", errDump)
-	}
 	url := "http://{host}/updates/"
 	mJSON, err := json.Marshal(metrics)
 	if err != nil {
@@ -142,12 +150,13 @@ func trySendMetricsRetry(r *resty.Request, url string) (*resty.Response, error) 
 	return nil, fmt.Errorf("timeout should end with <0")
 }
 
-func RunAgent(af *AgentFlags, runtimeMetrics []string, sendOnce bool, ignoreSendError bool, gzipRequest bool) error {
+func RunAgent(af *config.AgentFlags, runtimeMetrics []string, sendOnce bool, ignoreSendError bool, gzipRequest bool) error {
 	if err := logging.InitializeZapLogger("Info"); err != nil {
 		return fmt.Errorf("error initializing logger: %w", err)
 	}
 	logging.Log.Infoln("agent started")
 	metrics := metrics.NewMetricCollector(runtimeMetrics)
+	logging.Log.Infoln("Agent started with flags: ", *af)
 	logging.Log.Infoln("Server Address:", *af.Address)
 
 	pollInterval := time.Second * time.Duration(*af.PollInterval)
@@ -156,6 +165,7 @@ func RunAgent(af *AgentFlags, runtimeMetrics []string, sendOnce bool, ignoreSend
 	log.Println("Starting metrics collection")
 	c := make(chan error)
 	go CollectMetrics(metrics, pollInterval, c)
+	go CollectAdditionalMetrics(metrics, pollInterval, c)
 	go SendMetrics(metrics, *af.Address, sendOnce, ignoreSendError, gzipRequest, reportInterval, *af.HashKey, c)
 	return <-c
 }

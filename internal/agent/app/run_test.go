@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
+	"github.com/GaryShem/ya-metrics.git/internal/agent/config"
 	"github.com/GaryShem/ya-metrics.git/internal/agent/metrics"
 	"github.com/GaryShem/ya-metrics.git/internal/server/handlers"
 	"github.com/GaryShem/ya-metrics.git/internal/server/middleware"
@@ -20,7 +21,7 @@ type AgentSuite struct {
 	suite.Suite
 	repo   repository.Repository
 	server *httptest.Server
-	af     *AgentFlags
+	af     *config.AgentFlags
 }
 
 func (s *AgentSuite) SetupSuite() {
@@ -46,11 +47,13 @@ func (s *AgentSuite) SetupSuite() {
 	logging.Log.Infoln("server address", serverAddress)
 	reportInterval := 2
 	pollInterval := 1
-	s.af = &AgentFlags{
+	rateLimit := 1
+	s.af = &config.AgentFlags{
 		Address:        &serverAddress,
 		ReportInterval: &reportInterval,
 		PollInterval:   &pollInterval,
 		HashKey:        &hashKey,
+		RateLimit:      &rateLimit,
 	}
 }
 
