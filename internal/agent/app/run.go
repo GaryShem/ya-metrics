@@ -110,7 +110,7 @@ func sendMetricsBatch(mc *metrics.MetricCollector, host string, gzipRequest bool
 		h := hmac.New(sha256.New, []byte(keySHA))
 		hash := h.Sum(body)
 		hashStr := base64.StdEncoding.EncodeToString(hash)
-		request.SetHeader("HashSHA256", hashStr)
+		request.SetHeader("Hash", hashStr)
 	}
 	res, err := trySendMetricsRetry(request, url)
 	if err != nil {
