@@ -19,6 +19,7 @@ func RunServer(sf *config.ServerFlags) error {
 	if err := logging.InitializeZapLogger("Info"); err != nil {
 		return err
 	}
+	logging.Log.Infoln("server starting with flags:", sf)
 	var repo repository.Repository
 	if sf.DBString != "" {
 		logging.Log.Infoln("initializing database storage")
@@ -43,7 +44,12 @@ func RunServer(sf *config.ServerFlags) error {
 			_ = fs.SaveMetricsFile(time.Second * time.Duration(sf.StoreInterval))
 		}()
 	}
-	middlewares := []func(http.Handler) http.Handler{middleware.RequestGzipper, middleware.RequestLogger}
+	middlewares := []func(http.Handler) http.Handler{}
+	if sf.HashKey != "" {
+		hasher := middleware.HashChecker{Key: sf.HashKey}
+		middlewares = append(middlewares, hasher.Check)
+	}
+	middlewares = append(middlewares, middleware.RequestGzipper, middleware.RequestLogger)
 	r, err := handlers.MetricsRouter(repo, middlewares...)
 	if err != nil {
 		return err

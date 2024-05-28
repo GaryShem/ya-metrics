@@ -5,6 +5,7 @@ import (
 	gzip "compress/gzip"
 	"crypto/hmac"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -108,7 +109,8 @@ func sendMetricsBatch(mc *metrics.MetricCollector, host string, gzipRequest bool
 	if keySHA != "" {
 		h := hmac.New(sha256.New, []byte(keySHA))
 		hash := h.Sum(body)
-		request.SetHeader("HashSHA256", string(hash))
+		hashStr := base64.StdEncoding.EncodeToString(hash)
+		request.SetHeader("HashSHA256", hashStr)
 	}
 	res, err := trySendMetricsRetry(request, url)
 	if err != nil {
