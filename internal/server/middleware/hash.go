@@ -20,7 +20,8 @@ type HashChecker struct {
 
 func (hc *HashChecker) Check(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if hc.Key != "" && r.Header.Get("Hash") != "" {
+		logging.Log.Warn("hash: ", r.Header.Get("Hash"))
+		if hc.Key != "" && r.Header.Get("Hash") != "" && r.Header.Get("Hash") != "none" {
 			headerSHA := http.CanonicalHeaderKey("Hash")
 			body, err := io.ReadAll(r.Body)
 			if err != nil {
