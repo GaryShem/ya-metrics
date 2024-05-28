@@ -20,6 +20,7 @@ func main() {
 		"host", *af.Address,
 		"poll interval", *af.PollInterval,
 		"send interval", *af.ReportInterval,
+		"hash key", *af.HashKey,
 	)
 	err = app.RunAgent(af, metrics.SupportedRuntimeMetrics(),
 		false, false, true)

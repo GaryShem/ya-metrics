@@ -12,6 +12,7 @@ type ServerFlags struct {
 	FileStoragePath string
 	Restore         bool
 	DBString        string
+	HashKey         string
 }
 
 type envConfig struct {
@@ -20,6 +21,7 @@ type envConfig struct {
 	FileStoragePath string `env:"FILE_STORAGE_PATH"`
 	Restore         *bool  `env:"RESTORE"`
 	DBString        string `env:"DATABASE_DSN"`
+	HashKey         string `env:"KEY"`
 }
 
 type flagConfig struct {
@@ -28,6 +30,7 @@ type flagConfig struct {
 	FileStoragePath *string
 	Restore         *bool
 	DBString        *string
+	HashKey         *string
 }
 
 func ParseFlags(sf *ServerFlags) {
@@ -37,6 +40,7 @@ func ParseFlags(sf *ServerFlags) {
 		FileStoragePath: flag.String("f", "/tmp/metrics-db.json", "storage file path"),
 		Restore:         flag.Bool("r", true, "restore metrics from file"),
 		DBString:        flag.String("d", "", "database connection string"),
+		HashKey:         flag.String("k", "", "SHA hash key"),
 	}
 	flag.Parse()
 
@@ -68,5 +72,10 @@ func ParseFlags(sf *ServerFlags) {
 		sf.DBString = ec.DBString
 	} else {
 		sf.DBString = *flags.DBString
+	}
+	if ec.HashKey != "" {
+		sf.HashKey = ec.HashKey
+	} else {
+		sf.HashKey = *flags.HashKey
 	}
 }

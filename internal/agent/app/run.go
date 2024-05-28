@@ -3,6 +3,8 @@ package app
 import (
 	"bytes"
 	gzip "compress/gzip"
+	"crypto/hmac"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -19,6 +21,7 @@ type AgentFlags struct {
 	Address        *string
 	ReportInterval *int
 	PollInterval   *int
+	HashKey        *string
 }
 
 func CollectMetrics(mc *metrics.MetricCollector, interval time.Duration, ec chan error) {
@@ -35,12 +38,12 @@ func CollectMetrics(mc *metrics.MetricCollector, interval time.Duration, ec chan
 }
 
 func SendMetrics(mc *metrics.MetricCollector, host string, sendOnce bool, ignoreSendError bool,
-	gzipRequest bool, interval time.Duration, ec chan error) {
+	gzipRequest bool, interval time.Duration, keySHA string, ec chan error) {
 	timer := time.NewTicker(interval)
 	defer timer.Stop()
 	for {
 		<-timer.C
-		err := sendMetricsBatch(mc, host, gzipRequest)
+		err := sendMetricsBatch(mc, host, gzipRequest, keySHA)
 		if err != nil {
 			if ignoreSendError {
 				logging.Log.Warnln("Ignore send error:", err)
@@ -55,26 +58,29 @@ func SendMetrics(mc *metrics.MetricCollector, host string, sendOnce bool, ignore
 	}
 }
 
-func wrapGzipRequest(r *resty.Request, mJSON []byte) error {
+func wrapGzipBody(mJSON []byte) ([]byte, error) {
 	var buffer bytes.Buffer
 	writer, err := gzip.NewWriterLevel(&buffer, gzip.BestCompression)
 	if err != nil {
-		return fmt.Errorf("failed init compress writer: %v", err)
+		return nil, fmt.Errorf("failed init compress writer: %v", err)
 	}
 	if _, err = writer.Write(mJSON); err != nil {
-		return fmt.Errorf("error gzipping metric: %w", err)
+		return nil, fmt.Errorf("error gzipping metric: %w", err)
 	}
 	if err = writer.Close(); err != nil {
-		return fmt.Errorf("error gzipping metric: %w", err)
+		return nil, fmt.Errorf("error gzipping metric: %w", err)
 	}
 	bodyBytes := buffer.Bytes()
-	r.SetBody(bodyBytes)
-	r.Header.Add("Content-Encoding", "gzip")
-	r.Header.Add("Accept-Encoding", "gzip")
-	return nil
+	return bodyBytes, nil
 }
 
-func sendMetricsBatch(mc *metrics.MetricCollector, host string, gzipRequest bool) error {
+func wrapGzipRequest(r *resty.Request, gzippedBody []byte) {
+	r.SetBody(gzippedBody)
+	r.Header.Add("Content-Encoding", "gzip")
+	r.Header.Add("Accept-Encoding", "gzip")
+}
+
+func sendMetricsBatch(mc *metrics.MetricCollector, host string, gzipRequest bool, keySHA string) error {
 	client := resty.New()
 	metrics, errDump := mc.DumpMetrics()
 	logging.Log.Infoln(host)
@@ -88,13 +94,21 @@ func sendMetricsBatch(mc *metrics.MetricCollector, host string, gzipRequest bool
 	}
 	request := client.R().SetPathParam("host", host).
 		SetHeader("Content-Type", "application/json")
+	var body []byte
 	if gzipRequest {
-		err = wrapGzipRequest(request, mJSON)
+		body, err = wrapGzipBody(mJSON)
 		if err != nil {
 			return fmt.Errorf("error gzipping metric: %w", err)
 		}
+		wrapGzipRequest(request, body)
 	} else {
+		body = mJSON
 		request.SetBody(mJSON)
+	}
+	if keySHA != "" {
+		h := hmac.New(sha256.New, []byte(keySHA))
+		hash := h.Sum(body)
+		request.SetHeader("HashSHA256", string(hash))
 	}
 	res, err := trySendMetricsRetry(request, url)
 	if err != nil {
@@ -140,6 +154,6 @@ func RunAgent(af *AgentFlags, runtimeMetrics []string, sendOnce bool, ignoreSend
 	log.Println("Starting metrics collection")
 	c := make(chan error)
 	go CollectMetrics(metrics, pollInterval, c)
-	go SendMetrics(metrics, *af.Address, sendOnce, ignoreSendError, gzipRequest, reportInterval, c)
+	go SendMetrics(metrics, *af.Address, sendOnce, ignoreSendError, gzipRequest, reportInterval, *af.HashKey, c)
 	return <-c
 }

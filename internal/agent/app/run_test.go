@@ -1,6 +1,7 @@
 package app
 
 import (
+	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/GaryShem/ya-metrics.git/internal/agent/metrics"
 	"github.com/GaryShem/ya-metrics.git/internal/server/handlers"
+	"github.com/GaryShem/ya-metrics.git/internal/server/middleware"
 	"github.com/GaryShem/ya-metrics.git/internal/server/storage/memorystorage"
 	"github.com/GaryShem/ya-metrics.git/internal/server/storage/repository"
 	"github.com/GaryShem/ya-metrics.git/internal/shared/logging"
@@ -22,8 +24,16 @@ type AgentSuite struct {
 }
 
 func (s *AgentSuite) SetupSuite() {
+	hashKey := ""
+	middlewares := make([]func(http.Handler) http.Handler, 0)
+	if hashKey != "" {
+		hasher := middleware.HashChecker{Key: hashKey}
+		middlewares = append(middlewares, hasher.Check)
+	}
+	middlewares = append(middlewares, middleware.RequestGzipper)
+	middlewares = append(middlewares, middleware.RequestLogger)
 	s.repo = memorystorage.NewMemStorage()
-	router, err := handlers.MetricsRouter(s.repo)
+	router, err := handlers.MetricsRouter(s.repo, middlewares...)
 	if err != nil {
 		panic(err)
 	}
@@ -40,6 +50,7 @@ func (s *AgentSuite) SetupSuite() {
 		Address:        &serverAddress,
 		ReportInterval: &reportInterval,
 		PollInterval:   &pollInterval,
+		HashKey:        &hashKey,
 	}
 }
 

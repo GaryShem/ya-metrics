@@ -5,19 +5,19 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/GaryShem/ya-metrics.git/internal/server/middleware"
 	"github.com/GaryShem/ya-metrics.git/internal/server/storage/repository"
 	"github.com/GaryShem/ya-metrics.git/internal/shared/logging"
 )
 
-func MetricsRouter(ms repository.Repository) (chi.Router, error) {
+func MetricsRouter(ms repository.Repository, middlewares ...func(http.Handler) http.Handler) (chi.Router, error) {
 	if err := logging.InitializeZapLogger("Info"); err != nil {
 		return nil, err
 	}
 	r := chi.NewRouter()
 	h := NewHandler(ms)
-	r.Use(middleware.RequestGzipper)
-	r.Use(middleware.RequestLogger)
+	for _, mw := range middlewares {
+		r.Use(mw)
+	}
 
 	r.Route(`/`, func(r chi.Router) {
 		r.Get(`/ping`, h.Ping)
