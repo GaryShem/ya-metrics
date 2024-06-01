@@ -157,15 +157,15 @@ func RunAgent(af *config.AgentFlags, runtimeMetrics []string, sendOnce bool, ign
 	logging.Log.Infoln("agent started")
 	metrics := metrics.NewMetricCollector(runtimeMetrics)
 	logging.Log.Infoln("Agent started with flags: ", *af)
-	logging.Log.Infoln("Server Address:", *af.Address)
+	logging.Log.Infoln("Server Address:", af.Address)
 
-	pollInterval := time.Second * time.Duration(*af.PollInterval)
-	reportInterval := time.Second * time.Duration(*af.ReportInterval)
+	pollInterval := time.Second * time.Duration(af.PollInterval)
+	reportInterval := time.Second * time.Duration(af.ReportInterval)
 
 	log.Println("Starting metrics collection")
 	c := make(chan error)
 	go CollectMetrics(metrics, pollInterval, c)
 	go CollectAdditionalMetrics(metrics, pollInterval, c)
-	go SendMetrics(metrics, *af.Address, sendOnce, ignoreSendError, gzipRequest, reportInterval, *af.HashKey, c)
+	go SendMetrics(metrics, af.Address, sendOnce, ignoreSendError, gzipRequest, reportInterval, af.HashKey, c)
 	return <-c
 }

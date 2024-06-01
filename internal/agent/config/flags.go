@@ -6,7 +6,7 @@ import (
 	"github.com/caarlos0/env/v6"
 )
 
-type envConfig struct {
+type AgentFlags struct {
 	Address        string `env:"ADDRESS"`
 	ReportInterval int    `env:"REPORT_INTERVAL"`
 	PollInterval   int    `env:"POLL_INTERVAL"`
@@ -14,40 +14,32 @@ type envConfig struct {
 	RateLimit      int    `env:"RATE_LIMIT"`
 }
 
-type AgentFlags struct {
-	Address        *string
-	ReportInterval *int
-	PollInterval   *int
-	HashKey        *string
-	RateLimit      *int
-}
-
 func ParseFlags(af *AgentFlags) {
-	af.Address = flag.String("a", "localhost:8080", "server address:port")
-	af.ReportInterval = flag.Int("r", 10, "metric reporting interval, seconds int")
-	af.PollInterval = flag.Int("p", 2, "metric polling interval, seconds int")
-	af.HashKey = flag.String("k", "", "SHA hash key")
-	af.RateLimit = flag.Int("l", 1, "sending rate limit")
+	flag.StringVar(&af.Address, "a", "localhost:8080", "server address:port")
+	flag.IntVar(&af.ReportInterval, "r", 10, "metric reporting interval, seconds int")
+	flag.IntVar(&af.PollInterval, "p", 2, "metric polling interval, seconds int")
+	flag.StringVar(&af.HashKey, "k", "", "SHA hash key")
+	flag.IntVar(&af.RateLimit, "l", 1, "sending rate limit")
 
 	flag.Parse()
 
-	var ec envConfig
+	var ec AgentFlags
 	if err := env.Parse(&ec); err != nil {
 		panic(err)
 	}
 	if ec.Address != "" {
-		af.Address = &ec.Address
+		af.Address = ec.Address
 	}
 	if ec.ReportInterval != 0 {
-		af.ReportInterval = &ec.ReportInterval
+		af.ReportInterval = ec.ReportInterval
 	}
 	if ec.PollInterval != 0 {
-		af.PollInterval = &ec.PollInterval
+		af.PollInterval = ec.PollInterval
 	}
 	if ec.HashKey != "" {
-		af.HashKey = &ec.HashKey
+		af.HashKey = ec.HashKey
 	}
 	if ec.RateLimit != 0 {
-		af.RateLimit = &ec.RateLimit
+		af.RateLimit = ec.RateLimit
 	}
 }

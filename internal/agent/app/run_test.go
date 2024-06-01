@@ -45,15 +45,12 @@ func (s *AgentSuite) SetupSuite() {
 	logging.Log.Infoln(s.server.URL, serverPort)
 	serverAddress, _ := strings.CutPrefix(s.server.URL, "http://")
 	logging.Log.Infoln("server address", serverAddress)
-	reportInterval := 2
-	pollInterval := 1
-	rateLimit := 1
 	s.af = &config.AgentFlags{
-		Address:        &serverAddress,
-		ReportInterval: &reportInterval,
-		PollInterval:   &pollInterval,
-		HashKey:        &hashKey,
-		RateLimit:      &rateLimit,
+		Address:        serverAddress,
+		ReportInterval: 2,
+		PollInterval:   1,
+		HashKey:        hashKey,
+		RateLimit:      1,
 	}
 }
 
