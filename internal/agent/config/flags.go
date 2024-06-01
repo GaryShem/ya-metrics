@@ -12,6 +12,7 @@ type AgentFlags struct {
 	PollInterval   int    `env:"POLL_INTERVAL"`
 	HashKey        string `env:"KEY"`
 	RateLimit      int    `env:"RATE_LIMIT"`
+	GzipRequest    bool
 }
 
 func ParseFlags(af *AgentFlags) {
@@ -20,6 +21,7 @@ func ParseFlags(af *AgentFlags) {
 	flag.IntVar(&af.PollInterval, "p", 2, "metric polling interval, seconds int")
 	flag.StringVar(&af.HashKey, "k", "", "SHA hash key")
 	flag.IntVar(&af.RateLimit, "l", 1, "sending rate limit")
+	flag.BoolVar(&af.GzipRequest, "z", true, "gzip request")
 
 	flag.Parse()
 

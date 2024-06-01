@@ -46,28 +46,44 @@ func CollectAdditionalMetrics(mc *metrics.MetricCollector, interval time.Duratio
 	}
 }
 
-func SendMetrics(mc *metrics.MetricCollector, host string, sendOnce bool, ignoreSendError bool,
-	gzipRequest bool, interval time.Duration, keySHA string, ec chan error) {
+func SendMetrics(mc *metrics.MetricCollector, sf config.AgentFlags, sendOnce bool, ignoreSendError bool, ec chan error) {
+	interval := time.Duration(sf.ReportInterval) * time.Second
 	timer := time.NewTicker(interval)
+	semaphore := make(chan struct{}, sf.RateLimit)
+	sendErrChan := make(chan error)
 	defer timer.Stop()
-	for {
-		<-timer.C
+	select {
+	case <-timer.C:
+		semaphore <- struct{}{}
+		// if we only need to send a single message (i.e. for tests), fill the buffer channel
+		// that way we can ensure the sending goroutine is done with its task
+		if sendOnce {
+			for range sf.RateLimit - 1 {
+				semaphore <- struct{}{}
+			}
+		}
 		metricsDump, err := mc.DumpMetrics()
 		if err != nil {
+			ec <- fmt.Errorf("error dumping metrics: %w", err)
 			return
 		}
-		err = sendMetricsBatch(metricsDump, host, gzipRequest, keySHA)
+		go sendMetricsBatch(metricsDump, sf.Address, sf.GzipRequest, sf.HashKey, sendErrChan, semaphore)
 		if err != nil {
 			if ignoreSendError {
 				logging.Log.Warnln("Ignore send error:", err)
-				continue
+				break
 			}
 			ec <- err
 			return
 		}
 		if sendOnce {
+			semaphore <- struct{}{}
 			ec <- nil
+			return
 		}
+	case err := <-sendErrChan:
+		ec <- err
+		return
 	}
 }
 
@@ -93,13 +109,15 @@ func wrapGzipRequest(r *resty.Request, gzippedBody []byte) {
 	r.Header.Add("Accept-Encoding", "gzip")
 }
 
-func sendMetricsBatch(metrics []*models.Metrics, host string, gzipRequest bool, keySHA string) error {
+func sendMetricsBatch(metrics []*models.Metrics, host string, gzipRequest bool, keySHA string, ec chan error, semaphore chan struct{}) {
+	defer func() { <-semaphore }()
 	client := resty.New()
 	logging.Log.Infoln(host)
 	url := "http://{host}/updates/"
 	mJSON, err := json.Marshal(metrics)
 	if err != nil {
-		return fmt.Errorf("error marshalling metric: %w", err)
+		ec <- fmt.Errorf("error marshalling metric: %w", err)
+		return
 	}
 	request := client.R().SetPathParam("host", host).
 		SetHeader("Content-Type", "application/json")
@@ -107,7 +125,8 @@ func sendMetricsBatch(metrics []*models.Metrics, host string, gzipRequest bool, 
 	if gzipRequest {
 		body, err = wrapGzipBody(mJSON)
 		if err != nil {
-			return fmt.Errorf("error gzipping metric: %w", err)
+			ec <- fmt.Errorf("error gzipping metric: %w", err)
+			return
 		}
 		wrapGzipRequest(request, body)
 	} else {
@@ -123,15 +142,17 @@ func sendMetricsBatch(metrics []*models.Metrics, host string, gzipRequest bool, 
 	res, err := trySendMetricsRetry(request, url)
 	if err != nil {
 		if res != nil {
-			return fmt.Errorf("error sending metric, response is not nil: %w, %d %s", err, res.StatusCode(), res.String())
+			ec <- fmt.Errorf("error sending metric, response is not nil: %w, %d %s", err, res.StatusCode(), res.String())
+			return
 		} else {
-			return fmt.Errorf("error sending metric, response is nil: %w", err)
+			ec <- fmt.Errorf("error sending metric, response is nil: %w", err)
+			return
 		}
 	}
 	if res.StatusCode() != http.StatusOK {
-		return fmt.Errorf("status code not 200: %d %s", res.StatusCode(), res.String())
+		ec <- fmt.Errorf("status code not 200: %d %s", res.StatusCode(), res.String())
+		return
 	}
-	return nil
 }
 
 func trySendMetricsRetry(r *resty.Request, url string) (*resty.Response, error) {
@@ -150,22 +171,36 @@ func trySendMetricsRetry(r *resty.Request, url string) (*resty.Response, error) 
 	return nil, fmt.Errorf("timeout should end with <0")
 }
 
-func RunAgent(af *config.AgentFlags, runtimeMetrics []string, sendOnce bool, ignoreSendError bool, gzipRequest bool) error {
+func RunAgent(af *config.AgentFlags, runtimeMetrics []string, sendOnce bool,
+	ignoreSendError bool) error {
 	if err := logging.InitializeZapLogger("Info"); err != nil {
 		return fmt.Errorf("error initializing logger: %w", err)
 	}
 	logging.Log.Infoln("agent started")
-	metrics := metrics.NewMetricCollector(runtimeMetrics)
+	collector := metrics.NewMetricCollector(runtimeMetrics)
 	logging.Log.Infoln("Agent started with flags: ", *af)
 	logging.Log.Infoln("Server Address:", af.Address)
 
 	pollInterval := time.Second * time.Duration(af.PollInterval)
-	reportInterval := time.Second * time.Duration(af.ReportInterval)
 
 	log.Println("Starting metrics collection")
-	c := make(chan error)
-	go CollectMetrics(metrics, pollInterval, c)
-	go CollectAdditionalMetrics(metrics, pollInterval, c)
-	go SendMetrics(metrics, af.Address, sendOnce, ignoreSendError, gzipRequest, reportInterval, af.HashKey, c)
-	return <-c
+	errChannels := make([]chan error, 3)
+	for i := 0; i < 3; i++ {
+		errChannels[i] = make(chan error)
+	}
+	go CollectMetrics(collector, pollInterval, errChannels[0])
+	go CollectAdditionalMetrics(collector, pollInterval, errChannels[1])
+	go SendMetrics(collector, *af, sendOnce, ignoreSendError, errChannels[2])
+	select {
+	case err := <-errChannels[0]:
+		return fmt.Errorf("metric collection error: %w", err)
+	case err := <-errChannels[1]:
+		return fmt.Errorf("additional metric collection error: %w", err)
+	case err := <-errChannels[2]:
+		if err != nil {
+			return fmt.Errorf("metric send error: %w", err)
+		} else {
+			return nil
+		}
+	}
 }

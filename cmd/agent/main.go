@@ -23,7 +23,7 @@ func main() {
 		"hash key", af.HashKey,
 	)
 	err = app.RunAgent(af, metrics.SupportedRuntimeMetrics(),
-		false, false, true)
+		false, true)
 	if err != nil {
 		log.Fatalf("agent closed with error %v", err)
 	}
