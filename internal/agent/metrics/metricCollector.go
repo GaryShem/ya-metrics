@@ -6,6 +6,9 @@ import (
 	"runtime"
 	"sync"
 
+	gopscpu "github.com/shirou/gopsutil/v3/cpu"
+	gopsmem "github.com/shirou/gopsutil/v3/mem"
+
 	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
 )
 
@@ -133,6 +136,23 @@ func (m *MetricCollector) CollectMetrics() error {
 	}
 	m.Counters["PollCount"] += int64(len(m.RuntimeGaugeMetricNames))
 	m.Gauges["RandomValue"] = rand.Float64() //nolint:gosec // do not need cryptography on this
+	return nil
+}
+
+func (m *MetricCollector) CollectAdditionalMetrics() error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	virtualMemory, err := gopsmem.VirtualMemory()
+	if err != nil {
+		return err
+	}
+	cpuPercent, err := gopscpu.Percent(0, false)
+	if err != nil {
+		return err
+	}
+	m.Gauges["TotalMemory"] = float64(virtualMemory.Total)
+	m.Gauges["FreeMemory"] = float64(virtualMemory.Free)
+	m.Gauges["CPUutilization1"] = cpuPercent[0]
 	return nil
 }
 

@@ -8,6 +8,7 @@ import (
 	"github.com/GaryShem/ya-metrics.git/internal/server/config"
 	"github.com/GaryShem/ya-metrics.git/internal/server/handlers"
 	"github.com/GaryShem/ya-metrics.git/internal/server/longterm"
+	"github.com/GaryShem/ya-metrics.git/internal/server/middleware"
 	"github.com/GaryShem/ya-metrics.git/internal/server/storage/memorystorage"
 	"github.com/GaryShem/ya-metrics.git/internal/server/storage/postgres"
 	"github.com/GaryShem/ya-metrics.git/internal/server/storage/repository"
@@ -18,6 +19,7 @@ func RunServer(sf *config.ServerFlags) error {
 	if err := logging.InitializeZapLogger("Info"); err != nil {
 		return err
 	}
+	logging.Log.Infoln("server starting with flags:", sf)
 	var repo repository.Repository
 	if sf.DBString != "" {
 		logging.Log.Infoln("initializing database storage")
@@ -42,7 +44,14 @@ func RunServer(sf *config.ServerFlags) error {
 			_ = fs.SaveMetricsFile(time.Second * time.Duration(sf.StoreInterval))
 		}()
 	}
-	r, err := handlers.MetricsRouter(repo)
+	middlewares := []func(http.Handler) http.Handler{}
+	if sf.HashKey != "" {
+		hasher := middleware.HashChecker{Key: sf.HashKey}
+		middlewares = append(middlewares, hasher.Check)
+	}
+	middlewares = append(middlewares, middleware.RequestGzipper)
+	//middlewares = append(middlewares, middleware.RequestLogger)
+	r, err := handlers.MetricsRouter(repo, middlewares...)
 	if err != nil {
 		return err
 	}

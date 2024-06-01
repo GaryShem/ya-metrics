@@ -1,14 +1,17 @@
 package app
 
 import (
+	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
 
+	"github.com/GaryShem/ya-metrics.git/internal/agent/config"
 	"github.com/GaryShem/ya-metrics.git/internal/agent/metrics"
 	"github.com/GaryShem/ya-metrics.git/internal/server/handlers"
+	"github.com/GaryShem/ya-metrics.git/internal/server/middleware"
 	"github.com/GaryShem/ya-metrics.git/internal/server/storage/memorystorage"
 	"github.com/GaryShem/ya-metrics.git/internal/server/storage/repository"
 	"github.com/GaryShem/ya-metrics.git/internal/shared/logging"
@@ -18,12 +21,20 @@ type AgentSuite struct {
 	suite.Suite
 	repo   repository.Repository
 	server *httptest.Server
-	af     *AgentFlags
+	af     *config.AgentFlags
 }
 
 func (s *AgentSuite) SetupSuite() {
+	hashKey := ""
+	middlewares := make([]func(http.Handler) http.Handler, 0)
+	if hashKey != "" {
+		hasher := middleware.HashChecker{Key: hashKey}
+		middlewares = append(middlewares, hasher.Check)
+	}
+	middlewares = append(middlewares, middleware.RequestGzipper)
+	middlewares = append(middlewares, middleware.RequestLogger)
 	s.repo = memorystorage.NewMemStorage()
-	router, err := handlers.MetricsRouter(s.repo)
+	router, err := handlers.MetricsRouter(s.repo, middlewares...)
 	if err != nil {
 		panic(err)
 	}
@@ -34,12 +45,12 @@ func (s *AgentSuite) SetupSuite() {
 	logging.Log.Infoln(s.server.URL, serverPort)
 	serverAddress, _ := strings.CutPrefix(s.server.URL, "http://")
 	logging.Log.Infoln("server address", serverAddress)
-	reportInterval := 2
-	pollInterval := 1
-	s.af = &AgentFlags{
-		Address:        &serverAddress,
-		ReportInterval: &reportInterval,
-		PollInterval:   &pollInterval,
+	s.af = &config.AgentFlags{
+		Address:        serverAddress,
+		ReportInterval: 2,
+		PollInterval:   1,
+		HashKey:        hashKey,
+		RateLimit:      1,
 	}
 }
 
@@ -53,7 +64,7 @@ func TestAgentSuite(t *testing.T) {
 
 func (s *AgentSuite) TestAgentMetrics() {
 	err := RunAgent(s.af, metrics.SupportedRuntimeMetrics(),
-		true, false, false)
+		true, false)
 	s.Require().NoError(err)
 
 	for _, m := range metrics.SupportedRuntimeMetrics() {
@@ -69,12 +80,11 @@ func (s *AgentSuite) TestAgentMetrics() {
 }
 
 func (s *AgentSuite) TestAgentGzip() {
-	metrics := []string{"Alloc"}
-	err := RunAgent(s.af, metrics,
-		true, false, true)
+	collectedMetrics := []string{"Alloc"}
+	err := RunAgent(s.af, collectedMetrics, true, true)
 	s.Require().NoError(err)
 
-	for _, m := range metrics {
+	for _, m := range collectedMetrics {
 		g, err := s.repo.GetGauge(m)
 		s.Require().NoError(err)
 		s.Require().NotNil(g)
