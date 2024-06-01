@@ -1,6 +1,7 @@
 package memorystorage
 
 import (
+	"github.com/GaryShem/ya-metrics.git/internal/shared/logging"
 	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
 )
 
@@ -37,6 +38,11 @@ func (ms *MemStorage) UpdateMetric(m *models.Metrics) error {
 }
 
 func (ms *MemStorage) UpdateMetricBatch(metrics []models.Metrics) ([]models.Metrics, error) {
+	metricNames := make([]string, 0)
+	for _, m := range metrics {
+		metricNames = append(metricNames, m.ID)
+	}
+	logging.Log.Infoln("updating metrics: ", metricNames)
 	for _, m := range metrics {
 		if err := ms.UpdateMetric(&m); err != nil {
 			return nil, err

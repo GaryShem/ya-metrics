@@ -68,14 +68,6 @@ func SendMetrics(mc *metrics.MetricCollector, sf config.AgentFlags, sendOnce boo
 			return
 		}
 		go sendMetricsBatch(metricsDump, sf.Address, sf.GzipRequest, sf.HashKey, sendErrChan, semaphore)
-		if err != nil {
-			if ignoreSendError {
-				logging.Log.Warnln("Ignore send error:", err)
-				break
-			}
-			ec <- err
-			return
-		}
 		if sendOnce {
 			semaphore <- struct{}{}
 			ec <- nil
@@ -171,8 +163,7 @@ func trySendMetricsRetry(r *resty.Request, url string) (*resty.Response, error) 
 	return nil, fmt.Errorf("timeout should end with <0")
 }
 
-func RunAgent(af *config.AgentFlags, runtimeMetrics []string, sendOnce bool,
-	ignoreSendError bool) error {
+func RunAgent(af *config.AgentFlags, runtimeMetrics []string, sendOnce bool, ignoreSendError bool) error {
 	if err := logging.InitializeZapLogger("Info"); err != nil {
 		return fmt.Errorf("error initializing logger: %w", err)
 	}

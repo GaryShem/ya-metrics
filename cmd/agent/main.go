@@ -22,8 +22,7 @@ func main() {
 		"send interval", af.ReportInterval,
 		"hash key", af.HashKey,
 	)
-	err = app.RunAgent(af, metrics.SupportedRuntimeMetrics(),
-		false, true)
+	err = app.RunAgent(af, metrics.SupportedRuntimeMetrics(), false, true)
 	if err != nil {
 		log.Fatalf("agent closed with error %v", err)
 	}
