@@ -14,15 +14,15 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	af := new(app.AgentFlags)
+	af := new(config.AgentFlags)
 	config.ParseFlags(af)
 	logging.Log.Infoln("client starting with flags",
-		"host", *af.Address,
-		"poll interval", *af.PollInterval,
-		"send interval", *af.ReportInterval,
+		"host", af.Address,
+		"poll interval", af.PollInterval,
+		"send interval", af.ReportInterval,
+		"hash key", af.HashKey,
 	)
-	err = app.RunAgent(af, metrics.SupportedRuntimeMetrics(),
-		false, false, true)
+	err = app.RunAgent(af, metrics.SupportedRuntimeMetrics(), false, true)
 	if err != nil {
 		log.Fatalf("agent closed with error %v", err)
 	}
