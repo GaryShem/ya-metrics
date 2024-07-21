@@ -40,7 +40,7 @@ func (s *SQLStorage) UpdateMetricBatch(metrics []models.Metrics) ([]models.Metri
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 	gauges := make([]models.Metrics, 0)
 	counters := make([]models.Metrics, 0)
 	for _, m := range metrics {

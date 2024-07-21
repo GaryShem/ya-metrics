@@ -13,6 +13,7 @@ import (
 	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
 )
 
+// UpdateGauge - updates a gauge with specified key with specified value.
 func (h *RepoHandler) UpdateGauge(w http.ResponseWriter, r *http.Request) {
 	metricType := models.TypeGauge
 	// get metric name
@@ -44,6 +45,7 @@ func (h *RepoHandler) UpdateGauge(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// UpdateCounter - updates a counter with specified key with specified value.
 func (h *RepoHandler) UpdateCounter(w http.ResponseWriter, r *http.Request) {
 	metricType := models.TypeCounter
 	// get metric name
@@ -75,6 +77,7 @@ func (h *RepoHandler) UpdateCounter(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// UpdateMetric - updates a gauge with key and value specified in URL parameters.
 func (h *RepoHandler) UpdateMetric(w http.ResponseWriter, r *http.Request) {
 	// make sure metrics are passed via POST
 	if r.Method != http.MethodPost {
@@ -96,6 +99,7 @@ func (h *RepoHandler) UpdateMetric(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// UpdateMetricJSON - updates a gauge with key and value specified in JSON parameter.
 func (h *RepoHandler) UpdateMetricJSON(w http.ResponseWriter, r *http.Request) {
 	// make sure metrics are passed via POST
 	if r.Method != http.MethodPost {
@@ -134,6 +138,7 @@ func (h *RepoHandler) UpdateMetricJSON(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// UpdateMetricBatch - updates all metrics present in JSON list with specified values.
 func (h *RepoHandler) UpdateMetricBatch(w http.ResponseWriter, r *http.Request) {
 	// make sure metrics are passed via POST
 	if r.Method != http.MethodPost {

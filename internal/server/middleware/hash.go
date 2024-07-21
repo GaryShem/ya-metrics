@@ -14,13 +14,13 @@ import (
 
 var ErrHashNoMatch = errors.New("calculated and provided hashes don't match")
 
+// HashChecker - middleware to support checking request body hash.
 type HashChecker struct {
 	Key string
 }
 
 func (hc *HashChecker) Check(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		logging.Log.Warn("hash: ", r.Header.Get("Hash"))
 		if hc.Key != "" && r.Header.Get("Hash") != "" && r.Header.Get("Hash") != "none" {
 			headerSHA := http.CanonicalHeaderKey("Hash")
 			body, err := io.ReadAll(r.Body)

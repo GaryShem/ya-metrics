@@ -2,13 +2,16 @@ package handlers
 
 import (
 	"net/http"
+	_ "net/http/pprof"
 
 	"github.com/go-chi/chi/v5"
+	chimw "github.com/go-chi/chi/v5/middleware"
 
 	"github.com/GaryShem/ya-metrics.git/internal/server/storage/repository"
 	"github.com/GaryShem/ya-metrics.git/internal/shared/logging"
 )
 
+// MetricsRouter - main router for the server.
 func MetricsRouter(ms repository.Repository, middlewares ...func(http.Handler) http.Handler) (chi.Router, error) {
 	if err := logging.InitializeZapLogger("Info"); err != nil {
 		return nil, err
@@ -21,6 +24,7 @@ func MetricsRouter(ms repository.Repository, middlewares ...func(http.Handler) h
 
 	r.Route(`/`, func(r chi.Router) {
 		r.Get(`/ping`, h.Ping)
+		r.Mount(`/debug`, chimw.Profiler())
 		r.Post(`/updates/`, h.UpdateMetricBatch)
 
 		r.Route(`/update`, func(r chi.Router) {

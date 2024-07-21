@@ -187,3 +187,40 @@ func (s *MetricHandlerSuite) TestGetGaugeMetricJSONInvalid() {
 	s.Require().NoError(err)
 	s.Require().Equal(http.StatusNotFound, response.StatusCode())
 }
+
+func ExampleRepoHandler_GetCounter() {
+	body := ""
+	url := "localhost:8080/counter/foo/42"
+	client := resty.New()
+	_, _ = client.R().SetBody(body).Get(url)
+
+	// Output:
+	//
+}
+
+func ExampleRepoHandler_GetGauge() {
+	body := ""
+	url := "localhost:8080/gauge/foo/42"
+	client := resty.New()
+	_, _ = client.R().SetBody(body).Get(url)
+
+	// Output:
+	//
+}
+
+func ExampleRepoHandler_GetMetricJSON() {
+	body := "{" +
+		"\"ID\": \"foo\"" +
+		"\"MType\": \"counter\"" +
+		"}"
+	url := "localhost:8080/"
+	client := resty.New()
+	_, _ = client.R().SetBody(body).Get(url)
+}
+
+func ExampleRepoHandler_ListMetrics() {
+	body := ""
+	url := "localhost:8080/gauge/foo/42"
+	client := resty.New()
+	_, _ = client.R().SetBody(body).Get(url)
+}

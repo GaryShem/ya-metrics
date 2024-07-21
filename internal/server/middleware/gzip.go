@@ -18,6 +18,7 @@ func (w *gzippingResponseWriter) Write(b []byte) (int, error) {
 
 var _ http.ResponseWriter = &LoggingResponseWriter{}
 
+// RequestGzipper - middleware to support gzip requests.
 func RequestGzipper(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// if incoming content is encoded with gzip, decode it

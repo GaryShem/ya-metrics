@@ -21,6 +21,7 @@ type (
 		size   int
 		body   string
 	}
+	// LoggingResponseWriter - allows to write responses while logging certain data like headers and body.
 	LoggingResponseWriter struct {
 		http.ResponseWriter
 		data *responseData

@@ -12,6 +12,7 @@ import (
 	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
 )
 
+// GetGauge - gets the gauge value with specified key from the storage.
 func (h *RepoHandler) GetGauge(w http.ResponseWriter, r *http.Request) {
 	metricType := models.TypeGauge
 	// get metric name
@@ -33,6 +34,7 @@ func (h *RepoHandler) GetGauge(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// GetCounter - gets the counter value with specified key from the storage.
 func (h *RepoHandler) GetCounter(w http.ResponseWriter, r *http.Request) {
 	metricType := models.TypeCounter
 	// get metric name
@@ -54,6 +56,7 @@ func (h *RepoHandler) GetCounter(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// ListMetrics - returns a list of all gauges and counters present in the storage.
 func (h *RepoHandler) ListMetrics(w http.ResponseWriter, _ *http.Request) {
 	metrics, err := h.repo.ListMetrics()
 	if err != nil {
@@ -70,6 +73,7 @@ func (h *RepoHandler) ListMetrics(w http.ResponseWriter, _ *http.Request) {
 	}
 }
 
+// GetMetricJSON - gets the metric with the name and type specified in JSON parameter.
 func (h *RepoHandler) GetMetricJSON(w http.ResponseWriter, r *http.Request) {
 	// deserialize request
 	metric := &models.Metrics{}

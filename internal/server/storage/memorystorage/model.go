@@ -8,6 +8,7 @@ import (
 	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
 )
 
+// MemStorage - metric storage that uses memory as underlying base.
 type MemStorage struct {
 	GaugeMetrics   map[string]*models.Gauge   `json:"gaugeMetrics"`
 	CounterMetrics map[string]*models.Counter `json:"counterMetrics"`
