@@ -15,13 +15,13 @@ type AgentFlags struct {
 	GzipRequest    bool
 }
 
-func ParseFlags(af *AgentFlags) {
-	flag.StringVar(&af.Address, "a", "localhost:8080", "server address:port")
-	flag.IntVar(&af.ReportInterval, "r", 10, "metric reporting interval, seconds int")
-	flag.IntVar(&af.PollInterval, "p", 2, "metric polling interval, seconds int")
-	flag.StringVar(&af.HashKey, "k", "", "SHA hash key")
-	flag.IntVar(&af.RateLimit, "l", 1, "sending rate limit")
-	flag.BoolVar(&af.GzipRequest, "z", true, "gzip request")
+func ParseFlags(agentFlags *AgentFlags) {
+	flag.StringVar(&agentFlags.Address, "a", "localhost:8080", "server address:port")
+	flag.IntVar(&agentFlags.ReportInterval, "r", 10, "metric reporting interval, seconds int")
+	flag.IntVar(&agentFlags.PollInterval, "p", 2, "metric polling interval, seconds int")
+	flag.StringVar(&agentFlags.HashKey, "k", "", "SHA hash key")
+	flag.IntVar(&agentFlags.RateLimit, "l", 1, "sending rate limit")
+	flag.BoolVar(&agentFlags.GzipRequest, "z", true, "gzip request")
 
 	flag.Parse()
 
@@ -30,18 +30,18 @@ func ParseFlags(af *AgentFlags) {
 		panic(err)
 	}
 	if ec.Address != "" {
-		af.Address = ec.Address
+		agentFlags.Address = ec.Address
 	}
 	if ec.ReportInterval != 0 {
-		af.ReportInterval = ec.ReportInterval
+		agentFlags.ReportInterval = ec.ReportInterval
 	}
 	if ec.PollInterval != 0 {
-		af.PollInterval = ec.PollInterval
+		agentFlags.PollInterval = ec.PollInterval
 	}
 	if ec.HashKey != "" {
-		af.HashKey = ec.HashKey
+		agentFlags.HashKey = ec.HashKey
 	}
 	if ec.RateLimit != 0 {
-		af.RateLimit = ec.RateLimit
+		agentFlags.RateLimit = ec.RateLimit
 	}
 }
