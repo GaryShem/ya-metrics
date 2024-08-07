@@ -9,7 +9,7 @@ import (
 func TestGetExitAnalyzer(t *testing.T) {
 	analyzer := GetExitAnalyzer()
 	if analyzer == nil {
-		t.Errorf("GetExitAnalyzer() returned nil")
+		t.Fatalf("GetExitAnalyzer() returned nil")
 	}
 	expectedName := "os_exit_checker"
 	if analyzer.Name != expectedName {
