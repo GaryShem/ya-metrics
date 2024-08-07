@@ -27,7 +27,7 @@ func RequestGzipper(next http.Handler) http.Handler {
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 			}
-			defer gz.Close()
+			defer func() { _ = gz.Close() }()
 			r.Body = gz
 		}
 
@@ -38,7 +38,7 @@ func RequestGzipper(next http.Handler) http.Handler {
 				ResponseWriter: w,
 				Writer:         grw,
 			}
-			defer grw.Close()
+			defer func() { _ = grw.Close() }()
 		}
 		next.ServeHTTP(w, r)
 	})

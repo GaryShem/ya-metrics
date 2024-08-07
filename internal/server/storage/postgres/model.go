@@ -24,12 +24,12 @@ func NewSQLStorage(conn string, reset bool) (*SQLStorage, error) {
 	}
 	err := storage.Init()
 	if err != nil {
-		defer storage.db.Close()
+		defer func() { _ = storage.db.Close() }()
 		return nil, err
 	}
 	if reset {
 		if err = storage.Reset(); err != nil {
-			defer storage.db.Close()
+			defer func() { _ = storage.db.Close() }()
 			return nil, err
 		}
 
