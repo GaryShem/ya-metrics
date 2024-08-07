@@ -18,7 +18,7 @@ type MetricHandlerSuite struct {
 
 func (s *MetricHandlerSuite) BeforeTest(suiteName, testName string) {
 	s.repo = memorystorage.NewMemStorage()
-	router, err := MetricsRouter(s.repo)
+	router, err := MetricsRouter(s.repo, false)
 	if err != nil {
 		panic(err)
 	}

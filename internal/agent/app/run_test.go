@@ -34,7 +34,7 @@ func (s *AgentSuite) SetupSuite() {
 	middlewares = append(middlewares, middleware.RequestGzipper)
 	middlewares = append(middlewares, middleware.RequestLogger)
 	s.repo = memorystorage.NewMemStorage()
-	router, err := handlers.MetricsRouter(s.repo, middlewares...)
+	router, err := handlers.MetricsRouter(s.repo, false, middlewares...)
 	if err != nil {
 		panic(err)
 	}

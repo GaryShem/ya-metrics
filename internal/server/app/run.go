@@ -51,7 +51,7 @@ func RunServer(sf *config.ServerFlags) error {
 	}
 	middlewares = append(middlewares, middleware.RequestGzipper)
 	//middlewares = append(middlewares, middleware.RequestLogger)
-	r, err := handlers.MetricsRouter(repo, middlewares...)
+	r, err := handlers.MetricsRouter(repo, false, middlewares...)
 	if err != nil {
 		return err
 	}
