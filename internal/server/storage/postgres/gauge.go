@@ -16,7 +16,7 @@ func (s *SQLStorage) GetGauges() (map[string]models.Gauge, error) {
 	if res.Err() != nil {
 		return nil, res.Err()
 	}
-	defer res.Close()
+	defer func() { _ = res.Close() }()
 	for res.Next() {
 		gauge := models.NewGauge("", 0)
 		err = res.Scan(&gauge.Name, &gauge.Value)
