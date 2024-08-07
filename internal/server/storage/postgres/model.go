@@ -12,6 +12,7 @@ import (
 var ErrSQLConnectionFailed = errors.New("SQL connection failed")
 var ErrSQLNotImplemented = errors.New("SQL not implemented yet")
 
+// SQLStorage - metric storage that uses PostgreSQL as underlying base.
 type SQLStorage struct {
 	ConnString string
 	db         *sql.DB

@@ -47,35 +47,38 @@ func CollectAdditionalMetrics(mc *metrics.MetricCollector, interval time.Duratio
 }
 
 func SendMetrics(mc *metrics.MetricCollector, sf config.AgentFlags, sendOnce bool, ignoreSendError bool, ec chan error) {
+	defer logging.Log.Infoln("stopping sending metrics")
 	interval := time.Duration(sf.ReportInterval) * time.Second
 	timer := time.NewTicker(interval)
 	semaphore := make(chan struct{}, sf.RateLimit)
 	sendErrChan := make(chan error)
 	defer timer.Stop()
-	select {
-	case <-timer.C:
-		semaphore <- struct{}{}
-		// if we only need to send a single message (i.e. for tests), fill the buffer channel
-		// that way we can ensure the sending goroutine is done with its task
-		if sendOnce {
-			for range sf.RateLimit - 1 {
-				semaphore <- struct{}{}
-			}
-		}
-		metricsDump, err := mc.DumpMetrics()
-		if err != nil {
-			ec <- fmt.Errorf("error dumping metrics: %w", err)
-			return
-		}
-		go sendMetricsBatch(metricsDump, sf.Address, sf.GzipRequest, sf.HashKey, sendErrChan, semaphore)
-		if sendOnce {
+	for {
+		select {
+		case <-timer.C:
 			semaphore <- struct{}{}
-			ec <- nil
+			// if we only need to send a single message (i.e. for tests), fill the buffer channel
+			// that way we can ensure the sending goroutine is done with its task
+			if sendOnce {
+				for range sf.RateLimit - 1 {
+					semaphore <- struct{}{}
+				}
+			}
+			metricsDump, err := mc.DumpMetrics()
+			if err != nil {
+				ec <- fmt.Errorf("error dumping metrics: %w", err)
+				return
+			}
+			go sendMetricsBatch(metricsDump, sf.Address, sf.GzipRequest, sf.HashKey, sendErrChan, semaphore)
+			if sendOnce {
+				semaphore <- struct{}{}
+				ec <- nil
+				return
+			}
+		case err := <-sendErrChan:
+			ec <- err
 			return
 		}
-	case err := <-sendErrChan:
-		ec <- err
-		return
 	}
 }
 
@@ -102,6 +105,7 @@ func wrapGzipRequest(r *resty.Request, gzippedBody []byte) {
 }
 
 func sendMetricsBatch(metrics []*models.Metrics, host string, gzipRequest bool, keySHA string, ec chan error, semaphore chan struct{}) {
+	logging.Log.Infoln("Sending metric batch")
 	defer func() { <-semaphore }()
 	client := resty.New()
 	logging.Log.Infoln(host)

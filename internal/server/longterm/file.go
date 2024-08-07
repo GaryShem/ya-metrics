@@ -10,12 +10,14 @@ import (
 	"github.com/GaryShem/ya-metrics.git/internal/shared/logging"
 )
 
+// FileSaver - long-term metric storage for memory storage.
 type FileSaver struct {
 	timestamp time.Time
 	filename  string
 	MS        *memorystorage.MemStorage
 }
 
+// NewFileSaver - FileSaver constructor.
 func NewFileSaver(filename string, ms *memorystorage.MemStorage) *FileSaver {
 	return &FileSaver{
 		filename: filename,
@@ -23,6 +25,7 @@ func NewFileSaver(filename string, ms *memorystorage.MemStorage) *FileSaver {
 	}
 }
 
+// SaveMetricsFile - commit memory storage metrics to disk.
 func (fs *FileSaver) SaveMetricsFile(interval time.Duration) error {
 	if interval == 0 {
 		interval = time.Millisecond * 100
@@ -44,6 +47,7 @@ func (fs *FileSaver) SaveMetricsFile(interval time.Duration) error {
 	return nil
 }
 
+// LoadMetricsFile - load metrics from file into memory storage.
 func (fs *FileSaver) LoadMetricsFile() error {
 	ms := &memorystorage.MemStorage{}
 	j, err := os.ReadFile(fs.filename)
