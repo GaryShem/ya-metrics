@@ -12,7 +12,7 @@ import (
 )
 
 // MetricsRouter - main router for the server.
-func MetricsRouter(ms repository.Repository, middlewares ...func(http.Handler) http.Handler) (chi.Router, error) {
+func MetricsRouter(ms repository.Repository, enableProfiling bool, middlewares ...func(http.Handler) http.Handler) (chi.Router, error) {
 	if err := logging.InitializeZapLogger("Info"); err != nil {
 		return nil, err
 	}
@@ -23,8 +23,10 @@ func MetricsRouter(ms repository.Repository, middlewares ...func(http.Handler) h
 	}
 
 	r.Route(`/`, func(r chi.Router) {
+		if enableProfiling {
+			r.Mount(`/debug`, chimw.Profiler())
+		}
 		r.Get(`/ping`, h.Ping)
-		r.Mount(`/debug`, chimw.Profiler())
 		r.Post(`/updates/`, h.UpdateMetricBatch)
 
 		r.Route(`/update`, func(r chi.Router) {

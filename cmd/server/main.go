@@ -5,12 +5,22 @@ import (
 
 	"github.com/GaryShem/ya-metrics.git/internal/server/app"
 	"github.com/GaryShem/ya-metrics.git/internal/server/config"
+	"github.com/GaryShem/ya-metrics.git/internal/shared/logging"
 )
 
+const buildVersion string = "0.20"
+const buildDate string = "2024-08-07"
+const buildCommit string = "n/a"
+
 func main() {
-	sf := new(config.ServerFlags)
-	config.ParseFlags(sf)
-	err := app.RunServer(sf)
+	err := logging.InitializeZapLogger("Info")
+	if err != nil {
+		log.Fatal(err)
+	}
+	logging.LogVersion(buildVersion, buildDate, buildCommit)
+	serverFlags := new(config.ServerFlags)
+	config.ParseFlags(serverFlags)
+	err = app.RunServer(serverFlags)
 	if err != nil {
 		log.Fatal(err)
 	}

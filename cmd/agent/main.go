@@ -9,20 +9,25 @@ import (
 	"github.com/GaryShem/ya-metrics.git/internal/shared/logging"
 )
 
+const buildVersion string = "0.20"
+const buildDate string = "2024-08-07"
+const buildCommit string = ""
+
 func main() {
 	err := logging.InitializeZapLogger("Info")
 	if err != nil {
 		log.Fatal(err)
 	}
-	af := new(config.AgentFlags)
-	config.ParseFlags(af)
+	logging.LogVersion(buildVersion, buildDate, buildCommit)
+	agentFlags := new(config.AgentFlags)
+	config.ParseFlags(agentFlags)
 	logging.Log.Infoln("client starting with flags",
-		"host", af.Address,
-		"poll interval", af.PollInterval,
-		"send interval", af.ReportInterval,
-		"hash key", af.HashKey,
+		"host", agentFlags.Address,
+		"poll interval", agentFlags.PollInterval,
+		"send interval", agentFlags.ReportInterval,
+		"hash key", agentFlags.HashKey,
 	)
-	err = app.RunAgent(af, metrics.SupportedRuntimeMetrics(), false, true)
+	err = app.RunAgent(agentFlags, metrics.SupportedRuntimeMetrics(), false, true)
 	if err != nil {
 		log.Fatalf("agent closed with error %v", err)
 	}

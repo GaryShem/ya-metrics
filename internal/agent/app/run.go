@@ -46,11 +46,11 @@ func CollectAdditionalMetrics(mc *metrics.MetricCollector, interval time.Duratio
 	}
 }
 
-func SendMetrics(mc *metrics.MetricCollector, sf config.AgentFlags, sendOnce bool, ignoreSendError bool, ec chan error) {
+func SendMetrics(mc *metrics.MetricCollector, agentFlags config.AgentFlags, sendOnce bool, ignoreSendError bool, ec chan error) {
 	defer logging.Log.Infoln("stopping sending metrics")
-	interval := time.Duration(sf.ReportInterval) * time.Second
+	interval := time.Duration(agentFlags.ReportInterval) * time.Second
 	timer := time.NewTicker(interval)
-	semaphore := make(chan struct{}, sf.RateLimit)
+	semaphore := make(chan struct{}, agentFlags.RateLimit)
 	sendErrChan := make(chan error)
 	defer timer.Stop()
 	for {
@@ -60,7 +60,7 @@ func SendMetrics(mc *metrics.MetricCollector, sf config.AgentFlags, sendOnce boo
 			// if we only need to send a single message (i.e. for tests), fill the buffer channel
 			// that way we can ensure the sending goroutine is done with its task
 			if sendOnce {
-				for range sf.RateLimit - 1 {
+				for range agentFlags.RateLimit - 1 {
 					semaphore <- struct{}{}
 				}
 			}
@@ -69,7 +69,7 @@ func SendMetrics(mc *metrics.MetricCollector, sf config.AgentFlags, sendOnce boo
 				ec <- fmt.Errorf("error dumping metrics: %w", err)
 				return
 			}
-			go sendMetricsBatch(metricsDump, sf.Address, sf.GzipRequest, sf.HashKey, sendErrChan, semaphore)
+			go sendMetricsBatch(metricsDump, agentFlags.Address, agentFlags.GzipRequest, agentFlags.HashKey, sendErrChan, semaphore)
 			if sendOnce {
 				semaphore <- struct{}{}
 				ec <- nil
@@ -167,16 +167,16 @@ func trySendMetricsRetry(r *resty.Request, url string) (*resty.Response, error) 
 	return nil, fmt.Errorf("timeout should end with <0")
 }
 
-func RunAgent(af *config.AgentFlags, runtimeMetrics []string, sendOnce bool, ignoreSendError bool) error {
+func RunAgent(agentFlags *config.AgentFlags, runtimeMetrics []string, sendOnce bool, ignoreSendError bool) error {
 	if err := logging.InitializeZapLogger("Info"); err != nil {
 		return fmt.Errorf("error initializing logger: %w", err)
 	}
 	logging.Log.Infoln("agent started")
 	collector := metrics.NewMetricCollector(runtimeMetrics)
-	logging.Log.Infoln("Agent started with flags: ", *af)
-	logging.Log.Infoln("Server Address:", af.Address)
+	logging.Log.Infoln("Agent started with flags: ", *agentFlags)
+	logging.Log.Infoln("Server Address:", agentFlags.Address)
 
-	pollInterval := time.Second * time.Duration(af.PollInterval)
+	pollInterval := time.Second * time.Duration(agentFlags.PollInterval)
 
 	log.Println("Starting metrics collection")
 	errChannels := make([]chan error, 3)
@@ -185,7 +185,7 @@ func RunAgent(af *config.AgentFlags, runtimeMetrics []string, sendOnce bool, ign
 	}
 	go CollectMetrics(collector, pollInterval, errChannels[0])
 	go CollectAdditionalMetrics(collector, pollInterval, errChannels[1])
-	go SendMetrics(collector, *af, sendOnce, ignoreSendError, errChannels[2])
+	go SendMetrics(collector, *agentFlags, sendOnce, ignoreSendError, errChannels[2])
 	select {
 	case err := <-errChannels[0]:
 		return fmt.Errorf("metric collection error: %w", err)

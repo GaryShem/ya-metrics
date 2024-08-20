@@ -189,6 +189,8 @@ func (s *MetricHandlerSuite) TestGetGaugeMetricJSONInvalid() {
 }
 
 func ExampleRepoHandler_GetCounter() {
+	// pulling this handle adds 42 to the existing counter value
+	// or creates a new counter named foo with value 42
 	body := ""
 	url := "localhost:8080/counter/foo/42"
 	client := resty.New()
@@ -199,6 +201,8 @@ func ExampleRepoHandler_GetCounter() {
 }
 
 func ExampleRepoHandler_GetGauge() {
+	// pulling this handle sets 42 to the existing gauge
+	// or creates a new gauge named foo with value 42
 	body := ""
 	url := "localhost:8080/gauge/foo/42"
 	client := resty.New()

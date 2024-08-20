@@ -11,6 +11,6 @@ func (s *SQLStorage) Ping() error {
 	if err != nil {
 		return ErrSQLConnectionFailed
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	return db.Ping()
 }
