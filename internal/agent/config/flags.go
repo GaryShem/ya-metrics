@@ -13,8 +13,8 @@ type AgentFlags struct {
 	Address            string        `env:"ADDRESS" json:"address"`
 	ReportInterval     int           `env:"REPORT_INTERVAL"`
 	PollInterval       int           `env:"POLL_INTERVAL"`
-	ReportIntervalJson time.Duration `json:"report_interval"`
-	PollIntervalJson   time.Duration `json:"poll_interval"`
+	ReportIntervalJSON time.Duration `json:"report_interval"`
+	PollIntervalJSON   time.Duration `json:"poll_interval"`
 	HashKey            string        `env:"KEY" json:"hash_key"`
 	RateLimit          int           `env:"RATE_LIMIT" json:"rate_limit"`
 	GzipRequest        bool          `env:"GZIP_REQUEST" json:"gzip_request"`
@@ -58,7 +58,7 @@ func parseEnv(agentFlags *AgentFlags) {
 		agentFlags.CryptoKey = ec.CryptoKey
 	}
 }
-func parseJsonConfig(agentFlags *AgentFlags) error {
+func parseJSONConfig(agentFlags *AgentFlags) error {
 	if agentFlags.Config == "" {
 		return nil
 	}
@@ -74,10 +74,10 @@ func parseJsonConfig(agentFlags *AgentFlags) error {
 		agentFlags.Address = jsonFlags.Address
 	}
 	if agentFlags.PollInterval == 0 {
-		agentFlags.PollInterval = int(jsonFlags.PollIntervalJson.Seconds())
+		agentFlags.PollInterval = int(jsonFlags.PollIntervalJSON.Seconds())
 	}
 	if agentFlags.ReportInterval == 0 {
-		agentFlags.ReportInterval = int(jsonFlags.ReportIntervalJson.Seconds())
+		agentFlags.ReportInterval = int(jsonFlags.ReportIntervalJSON.Seconds())
 	}
 	if !agentFlags.GzipRequest {
 		agentFlags.GzipRequest = jsonFlags.GzipRequest
@@ -97,5 +97,5 @@ func parseJsonConfig(agentFlags *AgentFlags) error {
 func ParseFlags(agentFlags *AgentFlags) error {
 	parseCmdLine(agentFlags)
 	parseEnv(agentFlags)
-	return parseJsonConfig(agentFlags)
+	return parseJSONConfig(agentFlags)
 }

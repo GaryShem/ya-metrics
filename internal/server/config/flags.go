@@ -12,7 +12,7 @@ import (
 type ServerFlags struct {
 	Address           string        `env:"ADDRESS" json:"address"`
 	StoreInterval     int           `env:"STORE_INTERVAL" json:"-"`
-	StoreIntervalJson time.Duration `json:"store_interval"`
+	StoreIntervalJSON time.Duration `json:"store_interval"`
 	FileStoragePath   string        `env:"FILE_STORAGE_PATH" json:"store_file"`
 	Restore           bool          `env:"RESTORE" json:"restore"`
 	DBString          string        `env:"DATABASE_DSN" json:"database_dsn"`
@@ -61,7 +61,7 @@ func parseEnv(serverFlags *ServerFlags) {
 	}
 }
 
-func parseJsonConfig(serverFlags *ServerFlags) error {
+func parseJSONConfig(serverFlags *ServerFlags) error {
 	if serverFlags.Config == "" {
 		return nil
 	}
@@ -77,7 +77,7 @@ func parseJsonConfig(serverFlags *ServerFlags) error {
 		serverFlags.Address = jsonFlags.Address
 	}
 	if serverFlags.StoreInterval == 0 {
-		serverFlags.StoreInterval = int(jsonFlags.StoreIntervalJson.Seconds())
+		serverFlags.StoreInterval = int(jsonFlags.StoreIntervalJSON.Seconds())
 	}
 	if serverFlags.FileStoragePath == "" {
 		serverFlags.FileStoragePath = jsonFlags.FileStoragePath
@@ -100,5 +100,5 @@ func parseJsonConfig(serverFlags *ServerFlags) error {
 func ParseFlags(serverFlags *ServerFlags) error {
 	parseCmdLine(serverFlags)
 	parseEnv(serverFlags)
-	return parseJsonConfig(serverFlags)
+	return parseJSONConfig(serverFlags)
 }
