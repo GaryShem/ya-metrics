@@ -1,22 +1,28 @@
 package config
 
 import (
+	"encoding/json"
 	"flag"
+	"os"
+	"time"
 
 	"github.com/caarlos0/env/v6"
 )
 
 type AgentFlags struct {
-	Address        string `env:"ADDRESS"`
-	ReportInterval int    `env:"REPORT_INTERVAL"`
-	PollInterval   int    `env:"POLL_INTERVAL"`
-	HashKey        string `env:"KEY"`
-	RateLimit      int    `env:"RATE_LIMIT"`
-	GzipRequest    bool
-	CryptoKey      string `env:"CRYPTO_KEY"`
+	Address            string        `env:"ADDRESS" json:"address"`
+	ReportInterval     int           `env:"REPORT_INTERVAL"`
+	PollInterval       int           `env:"POLL_INTERVAL"`
+	ReportIntervalJson time.Duration `json:"report_interval"`
+	PollIntervalJson   time.Duration `json:"poll_interval"`
+	HashKey            string        `env:"KEY" json:"hash_key"`
+	RateLimit          int           `env:"RATE_LIMIT" json:"rate_limit"`
+	GzipRequest        bool          `env:"GZIP_REQUEST" json:"gzip_request"`
+	CryptoKey          string        `env:"CRYPTO_KEY" json:"crypto_key"`
+	Config             string        `json:"config"`
 }
 
-func ParseFlags(agentFlags *AgentFlags) {
+func parseCmdLine(agentFlags *AgentFlags) {
 	flag.StringVar(&agentFlags.Address, "a", "localhost:8080", "server address:port")
 	flag.IntVar(&agentFlags.ReportInterval, "r", 10, "metric reporting interval, seconds int")
 	flag.IntVar(&agentFlags.PollInterval, "p", 2, "metric polling interval, seconds int")
@@ -24,9 +30,11 @@ func ParseFlags(agentFlags *AgentFlags) {
 	flag.IntVar(&agentFlags.RateLimit, "l", 1, "sending rate limit")
 	flag.BoolVar(&agentFlags.GzipRequest, "z", true, "gzip request")
 	flag.StringVar(&agentFlags.CryptoKey, "crypto-key", "", "crypto key")
-
+	flag.StringVar(&agentFlags.Config, "c", "", "json config file")
 	flag.Parse()
+}
 
+func parseEnv(agentFlags *AgentFlags) {
 	var ec AgentFlags
 	if err := env.Parse(&ec); err != nil {
 		panic(err)
@@ -49,4 +57,45 @@ func ParseFlags(agentFlags *AgentFlags) {
 	if ec.CryptoKey != "" {
 		agentFlags.CryptoKey = ec.CryptoKey
 	}
+}
+func parseJsonConfig(agentFlags *AgentFlags) error {
+	if agentFlags.Config == "" {
+		return nil
+	}
+	config, err := os.ReadFile(agentFlags.Config)
+	if err != nil {
+		return err
+	}
+	var jsonFlags AgentFlags
+	if err = json.Unmarshal(config, &jsonFlags); err != nil {
+		return err
+	}
+	if agentFlags.Address == "" {
+		agentFlags.Address = jsonFlags.Address
+	}
+	if agentFlags.PollInterval == 0 {
+		agentFlags.PollInterval = int(jsonFlags.PollIntervalJson.Seconds())
+	}
+	if agentFlags.ReportInterval == 0 {
+		agentFlags.ReportInterval = int(jsonFlags.ReportIntervalJson.Seconds())
+	}
+	if !agentFlags.GzipRequest {
+		agentFlags.GzipRequest = jsonFlags.GzipRequest
+	}
+	if agentFlags.RateLimit == 0 {
+		agentFlags.RateLimit = jsonFlags.RateLimit
+	}
+	if agentFlags.HashKey == "" {
+		agentFlags.HashKey = jsonFlags.HashKey
+	}
+	if agentFlags.CryptoKey == "" {
+		agentFlags.CryptoKey = jsonFlags.CryptoKey
+	}
+	return nil
+}
+
+func ParseFlags(agentFlags *AgentFlags) error {
+	parseCmdLine(agentFlags)
+	parseEnv(agentFlags)
+	return parseJsonConfig(agentFlags)
 }

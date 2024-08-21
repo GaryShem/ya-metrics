@@ -9,9 +9,9 @@ import (
 	"github.com/GaryShem/ya-metrics.git/internal/shared/logging"
 )
 
-const buildVersion string = "0.3.0"
-const buildDate string = "2024-08-21"
-const buildCommit string = "iter21"
+const buildVersion string = "0.3.1"
+const buildDate string = "2024-08-22"
+const buildCommit string = "iter22"
 
 func main() {
 	err := logging.InitializeZapLogger("Info")
@@ -20,7 +20,9 @@ func main() {
 	}
 	logging.LogVersion(buildVersion, buildDate, buildCommit)
 	agentFlags := new(config.AgentFlags)
-	config.ParseFlags(agentFlags)
+	if err = config.ParseFlags(agentFlags); err != nil {
+		log.Fatal(err)
+	}
 	logging.Log.Infoln("client starting with flags",
 		"host", agentFlags.Address,
 		"poll interval", agentFlags.PollInterval,
