@@ -8,9 +8,9 @@ import (
 	"github.com/GaryShem/ya-metrics.git/internal/shared/logging"
 )
 
-const buildVersion string = "0.3.1"
+const buildVersion string = "0.3.2"
 const buildDate string = "2024-08-22"
-const buildCommit string = "iter22"
+const buildCommit string = "iter23"
 
 func main() {
 	err := logging.InitializeZapLogger("Info")

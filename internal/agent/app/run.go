@@ -3,6 +3,7 @@ package app
 import (
 	"bytes"
 	gzip "compress/gzip"
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
@@ -10,6 +11,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/go-resty/resty/v2"
@@ -21,33 +24,41 @@ import (
 	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
 )
 
-func CollectMetrics(mc *metrics.MetricCollector, interval time.Duration, ec chan error) {
+func CollectMetrics(ctx context.Context, mc *metrics.MetricCollector, interval time.Duration, ec chan error) {
 	timer := time.NewTicker(interval)
 	defer timer.Stop()
 	for {
-		<-timer.C
-		err := mc.CollectMetrics()
-		if err != nil {
-			ec <- err
+		select {
+		case <-timer.C:
+			err := mc.CollectMetrics()
+			if err != nil {
+				ec <- err
+				return
+			}
+		case <-ctx.Done():
 			return
 		}
 	}
 }
 
-func CollectAdditionalMetrics(mc *metrics.MetricCollector, interval time.Duration, ec chan error) {
+func CollectAdditionalMetrics(ctx context.Context, mc *metrics.MetricCollector, interval time.Duration, ec chan error) {
 	timer := time.NewTicker(interval)
 	defer timer.Stop()
 	for {
-		<-timer.C
-		err := mc.CollectAdditionalMetrics()
-		if err != nil {
-			ec <- err
+		select {
+		case <-timer.C:
+			err := mc.CollectAdditionalMetrics()
+			if err != nil {
+				ec <- err
+				return
+			}
+		case <-ctx.Done():
 			return
 		}
 	}
 }
 
-func SendMetrics(mc *metrics.MetricCollector, agentFlags config.AgentFlags, sendOnce bool, ignoreSendError bool, ec chan error) {
+func SendMetrics(ctx context.Context, mc *metrics.MetricCollector, agentFlags config.AgentFlags, sendOnce bool, ec chan error) {
 	defer logging.Log.Infoln("stopping sending metrics")
 	interval := time.Duration(agentFlags.ReportInterval) * time.Second
 	timer := time.NewTicker(interval)
@@ -75,6 +86,13 @@ func SendMetrics(mc *metrics.MetricCollector, agentFlags config.AgentFlags, send
 				semaphore <- struct{}{}
 				ec <- nil
 				return
+			}
+			select {
+			case <-ctx.Done():
+				ec <- nil
+				return
+			default:
+				// go to next iteration
 			}
 		case err := <-sendErrChan:
 			ec <- err
@@ -195,9 +213,11 @@ func RunAgent(agentFlags *config.AgentFlags, runtimeMetrics []string, sendOnce b
 	for i := 0; i < 3; i++ {
 		errChannels[i] = make(chan error)
 	}
-	go CollectMetrics(collector, pollInterval, errChannels[0])
-	go CollectAdditionalMetrics(collector, pollInterval, errChannels[1])
-	go SendMetrics(collector, *agentFlags, sendOnce, ignoreSendError, errChannels[2])
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	defer stop()
+	go CollectMetrics(ctx, collector, pollInterval, errChannels[0])
+	go CollectAdditionalMetrics(ctx, collector, pollInterval, errChannels[1])
+	go SendMetrics(ctx, collector, *agentFlags, sendOnce, errChannels[2])
 	select {
 	case err := <-errChannels[0]:
 		return fmt.Errorf("metric collection error: %w", err)
