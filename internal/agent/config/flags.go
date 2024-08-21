@@ -13,6 +13,7 @@ type AgentFlags struct {
 	HashKey        string `env:"KEY"`
 	RateLimit      int    `env:"RATE_LIMIT"`
 	GzipRequest    bool
+	CryptoKey      string `env:"CRYPTO_KEY"`
 }
 
 func ParseFlags(agentFlags *AgentFlags) {
@@ -22,6 +23,7 @@ func ParseFlags(agentFlags *AgentFlags) {
 	flag.StringVar(&agentFlags.HashKey, "k", "", "SHA hash key")
 	flag.IntVar(&agentFlags.RateLimit, "l", 1, "sending rate limit")
 	flag.BoolVar(&agentFlags.GzipRequest, "z", true, "gzip request")
+	flag.StringVar(&agentFlags.CryptoKey, "crypto-key", "", "crypto key")
 
 	flag.Parse()
 
@@ -43,5 +45,8 @@ func ParseFlags(agentFlags *AgentFlags) {
 	}
 	if ec.RateLimit != 0 {
 		agentFlags.RateLimit = ec.RateLimit
+	}
+	if ec.CryptoKey != "" {
+		agentFlags.CryptoKey = ec.CryptoKey
 	}
 }

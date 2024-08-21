@@ -15,6 +15,7 @@ import (
 	"github.com/go-resty/resty/v2"
 
 	"github.com/GaryShem/ya-metrics.git/internal/agent/config"
+	"github.com/GaryShem/ya-metrics.git/internal/agent/encryption"
 	"github.com/GaryShem/ya-metrics.git/internal/agent/metrics"
 	"github.com/GaryShem/ya-metrics.git/internal/shared/logging"
 	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
@@ -69,7 +70,7 @@ func SendMetrics(mc *metrics.MetricCollector, agentFlags config.AgentFlags, send
 				ec <- fmt.Errorf("error dumping metrics: %w", err)
 				return
 			}
-			go sendMetricsBatch(metricsDump, agentFlags.Address, agentFlags.GzipRequest, agentFlags.HashKey, sendErrChan, semaphore)
+			go sendMetricsBatch(metricsDump, agentFlags, sendErrChan, semaphore)
 			if sendOnce {
 				semaphore <- struct{}{}
 				ec <- nil
@@ -98,43 +99,48 @@ func wrapGzipBody(mJSON []byte) ([]byte, error) {
 	return bodyBytes, nil
 }
 
-func wrapGzipRequest(r *resty.Request, gzippedBody []byte) {
-	r.SetBody(gzippedBody)
-	r.Header.Add("Content-Encoding", "gzip")
-	r.Header.Add("Accept-Encoding", "gzip")
-}
-
-func sendMetricsBatch(metrics []*models.Metrics, host string, gzipRequest bool, keySHA string, ec chan error, semaphore chan struct{}) {
+func sendMetricsBatch(metrics []*models.Metrics, agentFlags config.AgentFlags, ec chan error, semaphore chan struct{}) {
 	logging.Log.Infoln("Sending metric batch")
 	defer func() { <-semaphore }()
 	client := resty.New()
-	logging.Log.Infoln(host)
+	logging.Log.Infoln(agentFlags.Address)
 	url := "http://{host}/updates/"
 	mJSON, err := json.Marshal(metrics)
 	if err != nil {
 		ec <- fmt.Errorf("error marshalling metric: %w", err)
 		return
 	}
-	request := client.R().SetPathParam("host", host).
+	request := client.R().SetPathParam("host", agentFlags.Address).
 		SetHeader("Content-Type", "application/json")
 	var body []byte
-	if gzipRequest {
+	if agentFlags.GzipRequest {
 		body, err = wrapGzipBody(mJSON)
 		if err != nil {
 			ec <- fmt.Errorf("error gzipping metric: %w", err)
 			return
 		}
-		wrapGzipRequest(request, body)
+		request.Header.Add("Content-Encoding", "gzip")
+		request.Header.Add("Accept-Encoding", "gzip")
 	} else {
 		body = mJSON
-		request.SetBody(mJSON)
 	}
-	if keySHA != "" {
-		h := hmac.New(sha256.New, []byte(keySHA))
+	if agentFlags.HashKey != "" {
+		h := hmac.New(sha256.New, []byte(agentFlags.HashKey))
 		hash := h.Sum(body)
 		hashStr := base64.StdEncoding.EncodeToString(hash)
 		request.SetHeader("Hash", hashStr)
 	}
+
+	if agentFlags.CryptoKey != "" {
+		encryptor := encryption.GetEncryptor()
+		body, err = encryptor.Encrypt(body)
+		if err != nil {
+			ec <- fmt.Errorf("error encrypting body: %w", err)
+			return
+		}
+	}
+
+	request.SetBody(body)
 	res, err := trySendMetricsRetry(request, url)
 	if err != nil {
 		if res != nil {
@@ -170,6 +176,12 @@ func trySendMetricsRetry(r *resty.Request, url string) (*resty.Response, error) 
 func RunAgent(agentFlags *config.AgentFlags, runtimeMetrics []string, sendOnce bool, ignoreSendError bool) error {
 	if err := logging.InitializeZapLogger("Info"); err != nil {
 		return fmt.Errorf("error initializing logger: %w", err)
+	}
+	if agentFlags.CryptoKey != "" {
+		err := encryption.InitEncryptor(agentFlags.CryptoKey)
+		if err != nil {
+			return fmt.Errorf("error initializing encryptor: %w", err)
+		}
 	}
 	logging.Log.Infoln("agent started")
 	collector := metrics.NewMetricCollector(runtimeMetrics)

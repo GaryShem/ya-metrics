@@ -45,6 +45,13 @@ func RunServer(sf *config.ServerFlags) error {
 		}()
 	}
 	middlewares := []func(http.Handler) http.Handler{}
+	if sf.CryptoKey != "" {
+		decryptor, err := middleware.NewEncryptionMiddleware(sf.CryptoKey)
+		if err != nil {
+			return err
+		}
+		middlewares = append(middlewares, decryptor.Decrypt)
+	}
 	if sf.HashKey != "" {
 		hasher := middleware.HashChecker{Key: sf.HashKey}
 		middlewares = append(middlewares, hasher.Check)

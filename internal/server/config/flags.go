@@ -13,6 +13,7 @@ type ServerFlags struct {
 	Restore         bool   `env:"RESTORE"`
 	DBString        string `env:"DATABASE_DSN"`
 	HashKey         string `env:"KEY"`
+	CryptoKey       string `env:"CRYPTO_KEY"`
 }
 
 func ParseFlags(serverFlags *ServerFlags) {
@@ -22,6 +23,7 @@ func ParseFlags(serverFlags *ServerFlags) {
 	flag.BoolVar(&serverFlags.Restore, "r", true, "restore metrics from file")
 	flag.StringVar(&serverFlags.DBString, "d", "", "database connection string")
 	flag.StringVar(&serverFlags.HashKey, "k", "", "SHA hash key")
+	flag.StringVar(&serverFlags.CryptoKey, "crypto-key", "", "crypto key")
 	flag.Parse()
 
 	var ec ServerFlags
@@ -45,5 +47,8 @@ func ParseFlags(serverFlags *ServerFlags) {
 	}
 	if ec.HashKey != "" {
 		serverFlags.HashKey = ec.HashKey
+	}
+	if ec.CryptoKey != "" {
+		serverFlags.CryptoKey = ec.CryptoKey
 	}
 }
