@@ -39,8 +39,10 @@ func (s *SQLStorageMetricsTestSuite) BeforeTest(_, _ string) {
 }
 
 func TestMemStorageTestSuite(t *testing.T) {
-	sf := config.ServerFlags{}
-	config.ParseFlags(&sf)
+	sf, err := config.ParseFlags()
+	if err != nil {
+		t.Fatal(err)
+	}
 	if sf.DBString == "" {
 		t.Skip("No db string provided")
 	}
