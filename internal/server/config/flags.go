@@ -21,84 +21,99 @@ type ServerFlags struct {
 	Config            string        `env:"CONFIG"`
 }
 
-func parseCmdLine(serverFlags *ServerFlags) {
-	flag.StringVar(&serverFlags.Address, "a", "localhost:8080", "server address:port")
-	flag.IntVar(&serverFlags.StoreInterval, "i", 300, "metric saving interval")
-	flag.StringVar(&serverFlags.FileStoragePath, "f", "/tmp/metrics-db.json", "storage file path")
-	flag.BoolVar(&serverFlags.Restore, "r", true, "restore metrics from file")
-	flag.StringVar(&serverFlags.DBString, "d", "", "database connection string")
-	flag.StringVar(&serverFlags.HashKey, "k", "", "SHA hash key")
-	flag.StringVar(&serverFlags.CryptoKey, "crypto-key", "", "crypto key")
-	flag.StringVar(&serverFlags.Config, "c", "", "json config file")
-	flag.Parse()
-}
-
-func parseEnv(serverFlags *ServerFlags) {
-	var ec ServerFlags
-	if err := env.Parse(&ec); err != nil {
-		panic(err)
-	}
-	if ec.Address != "" {
-		serverFlags.Address = ec.Address
-	}
-	if ec.FileStoragePath != "" {
-		serverFlags.FileStoragePath = ec.FileStoragePath
-	}
-	if ec.Restore {
-		serverFlags.Restore = ec.Restore
-	}
-	if ec.StoreInterval != 0 {
-		serverFlags.StoreInterval = ec.StoreInterval
-	}
-	if ec.DBString != "" {
-		serverFlags.DBString = ec.DBString
-	}
-	if ec.HashKey != "" {
-		serverFlags.HashKey = ec.HashKey
-	}
-	if ec.CryptoKey != "" {
-		serverFlags.CryptoKey = ec.CryptoKey
-	}
-}
-
-func parseJSONConfig(serverFlags *ServerFlags) error {
-	if serverFlags.Config == "" {
+func withCmdLine() Option {
+	return func(serverFlags *ServerFlags) error {
+		flag.StringVar(&serverFlags.Address, "a", "localhost:8080", "server address:port")
+		flag.IntVar(&serverFlags.StoreInterval, "i", 300, "metric saving interval")
+		flag.StringVar(&serverFlags.FileStoragePath, "f", "/tmp/metrics-db.json", "storage file path")
+		flag.BoolVar(&serverFlags.Restore, "r", true, "restore metrics from file")
+		flag.StringVar(&serverFlags.DBString, "d", "", "database connection string")
+		flag.StringVar(&serverFlags.HashKey, "k", "", "SHA hash key")
+		flag.StringVar(&serverFlags.CryptoKey, "crypto-key", "", "crypto key")
+		flag.StringVar(&serverFlags.Config, "c", "", "json config file")
+		flag.Parse()
 		return nil
 	}
-	config, err := os.ReadFile(serverFlags.Config)
-	if err != nil {
-		return err
-	}
-	var jsonFlags ServerFlags
-	if err = json.Unmarshal(config, &jsonFlags); err != nil {
-		return err
-	}
-	if serverFlags.Address == "" {
-		serverFlags.Address = jsonFlags.Address
-	}
-	if serverFlags.StoreInterval == 0 {
-		serverFlags.StoreInterval = int(jsonFlags.StoreIntervalJSON.Seconds())
-	}
-	if serverFlags.FileStoragePath == "" {
-		serverFlags.FileStoragePath = jsonFlags.FileStoragePath
-	}
-	if !serverFlags.Restore {
-		serverFlags.Restore = jsonFlags.Restore
-	}
-	if serverFlags.DBString == "" {
-		serverFlags.DBString = jsonFlags.DBString
-	}
-	if serverFlags.HashKey == "" {
-		serverFlags.HashKey = jsonFlags.HashKey
-	}
-	if serverFlags.CryptoKey == "" {
-		serverFlags.CryptoKey = jsonFlags.CryptoKey
-	}
-	return nil
 }
 
-func ParseFlags(serverFlags *ServerFlags) error {
-	parseCmdLine(serverFlags)
-	parseEnv(serverFlags)
-	return parseJSONConfig(serverFlags)
+func withEnv() Option {
+	return func(serverFlags *ServerFlags) error {
+		var ec ServerFlags
+		if err := env.Parse(&ec); err != nil {
+			panic(err)
+		}
+		if ec.Address != "" {
+			serverFlags.Address = ec.Address
+		}
+		if ec.FileStoragePath != "" {
+			serverFlags.FileStoragePath = ec.FileStoragePath
+		}
+		if ec.Restore {
+			serverFlags.Restore = ec.Restore
+		}
+		if ec.StoreInterval != 0 {
+			serverFlags.StoreInterval = ec.StoreInterval
+		}
+		if ec.DBString != "" {
+			serverFlags.DBString = ec.DBString
+		}
+		if ec.HashKey != "" {
+			serverFlags.HashKey = ec.HashKey
+		}
+		if ec.CryptoKey != "" {
+			serverFlags.CryptoKey = ec.CryptoKey
+		}
+		return nil
+	}
+}
+
+func withJSONConfig() Option {
+	return func(serverFlags *ServerFlags) error {
+		if serverFlags.Config == "" {
+			return nil
+		}
+		config, err := os.ReadFile(serverFlags.Config)
+		if err != nil {
+			return err
+		}
+		var jsonFlags ServerFlags
+		if err = json.Unmarshal(config, &jsonFlags); err != nil {
+			return err
+		}
+		if serverFlags.Address == "" {
+			serverFlags.Address = jsonFlags.Address
+		}
+		if serverFlags.StoreInterval == 0 {
+			serverFlags.StoreInterval = int(jsonFlags.StoreIntervalJSON.Seconds())
+		}
+		if serverFlags.FileStoragePath == "" {
+			serverFlags.FileStoragePath = jsonFlags.FileStoragePath
+		}
+		if !serverFlags.Restore {
+			serverFlags.Restore = jsonFlags.Restore
+		}
+		if serverFlags.DBString == "" {
+			serverFlags.DBString = jsonFlags.DBString
+		}
+		if serverFlags.HashKey == "" {
+			serverFlags.HashKey = jsonFlags.HashKey
+		}
+		if serverFlags.CryptoKey == "" {
+			serverFlags.CryptoKey = jsonFlags.CryptoKey
+		}
+		return nil
+	}
+}
+
+type Option func(*ServerFlags) error
+
+func ParseFlags() (*ServerFlags, error) {
+	sf := &ServerFlags{}
+	options := []Option{withCmdLine(), withEnv(), withJSONConfig()}
+	for _, option := range options {
+		if err := option(sf); err != nil {
+			return nil, err
+		}
+	}
+	return sf, nil
 }
