@@ -63,8 +63,7 @@ func TestAgentSuite(t *testing.T) {
 }
 
 func (s *AgentSuite) TestAgentMetrics() {
-	err := RunAgent(s.af, metrics.SupportedRuntimeMetrics(),
-		true, false)
+	err := RunAgent(s.af, metrics.SupportedRuntimeMetrics(), true)
 	s.Require().NoError(err)
 
 	for _, m := range metrics.SupportedRuntimeMetrics() {
@@ -81,7 +80,7 @@ func (s *AgentSuite) TestAgentMetrics() {
 
 func (s *AgentSuite) TestAgentGzip() {
 	collectedMetrics := []string{"Alloc"}
-	err := RunAgent(s.af, collectedMetrics, true, true)
+	err := RunAgent(s.af, collectedMetrics, true)
 	s.Require().NoError(err)
 
 	for _, m := range collectedMetrics {
