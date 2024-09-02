@@ -127,6 +127,7 @@ func sendMetricsBatch(metrics []*models.Metrics, agentFlags config.AgentFlags, e
 	}
 	request := client.R().SetPathParam("host", agentFlags.Address).
 		SetHeader("Content-Type", "application/json")
+	request.SetHeader("X-Real-IP", GetLocalIP())
 	var body []byte
 	if agentFlags.GzipRequest {
 		body, err = wrapGzipBody(mJSON)
