@@ -50,6 +50,13 @@ func initializeStorage(sf *config.ServerFlags) (repository.Repository, error) {
 
 func initMiddlewares(sf *config.ServerFlags) ([]func(http.Handler) http.Handler, error) {
 	middlewares := []func(http.Handler) http.Handler{}
+	if sf.TrustedSubnet != "" {
+		networkFilter, err := middleware.NewNetworkFilterMiddleware(sf.TrustedSubnet)
+		if err != nil {
+			return nil, err
+		}
+		middlewares = append(middlewares, networkFilter.Validate)
+	}
 	if sf.CryptoKey != "" {
 		decryptor, err := middleware.NewEncryptionMiddleware(sf.CryptoKey)
 		if err != nil {
