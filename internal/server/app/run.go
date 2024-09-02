@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/GaryShem/ya-metrics.git/internal/server/config"
-	"github.com/GaryShem/ya-metrics.git/internal/server/handlers"
+	http2 "github.com/GaryShem/ya-metrics.git/internal/server/handlers/http"
 	"github.com/GaryShem/ya-metrics.git/internal/server/longterm"
 	"github.com/GaryShem/ya-metrics.git/internal/server/middleware"
 	"github.com/GaryShem/ya-metrics.git/internal/server/storage/memorystorage"
@@ -86,7 +86,7 @@ func RunServer(sf *config.ServerFlags) error {
 		return err
 	}
 	//middlewares = append(middlewares, middleware.RequestLogger)
-	r, err := handlers.MetricsRouter(repo, false, middlewares...)
+	r, err := http2.MetricsRouter(repo, false, middlewares...)
 	if err != nil {
 		return err
 	}

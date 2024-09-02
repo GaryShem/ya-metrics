@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package grpc;
+
+option go_package = "grpc/proto";
+
+import "google/protobuf/empty.proto";
+
+service Metrics {
+  rpc ListMetrics(google.protobuf.Empty) returns (MetricListMessage);
+
+  rpc GetGauge(NameMessage) returns (GetGaugeResponse);
+  rpc UpdateGauge(UpdateGaugeRequest) returns (google.protobuf.Empty);
+  rpc GetCounter(NameMessage) returns (GetCounterResponse);
+  rpc UpdateCounter(UpdateCounterRequest) returns (google.protobuf.Empty);
+  rpc GetMetric(MetricMessage) returns (MetricMessage);
+  rpc UpdateMetric(MetricMessage) returns (MetricMessage);
+
+  rpc UpdateBatch(MetricListMessage) returns (MetricListMessage);
+}
+
+message Metric {
+  string name = 1;
+  string type = 2;
+  double value = 3;
+  int64 delta = 4;
+}
+
+message NameMessage {
+  string name = 1;
+}
+
+message GetGaugeResponse {
+  double value = 1;
+}
+
+message GetCounterResponse {
+  int64 value = 1;
+}
+
+message UpdateGaugeRequest {
+  string name = 1;
+  double value = 2;
+}
+
+message UpdateCounterRequest {
+  string name = 1;
+  int64 delta = 2;
+}
+
+message MetricMessage {
+  Metric metric = 1;
+}
+
+message MetricListMessage {
+  repeated Metric metrics = 1;
+}

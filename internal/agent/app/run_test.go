@@ -10,7 +10,7 @@ import (
 
 	"github.com/GaryShem/ya-metrics.git/internal/agent/config"
 	"github.com/GaryShem/ya-metrics.git/internal/agent/metrics"
-	"github.com/GaryShem/ya-metrics.git/internal/server/handlers"
+	http2 "github.com/GaryShem/ya-metrics.git/internal/server/handlers/http"
 	"github.com/GaryShem/ya-metrics.git/internal/server/middleware"
 	"github.com/GaryShem/ya-metrics.git/internal/server/storage/memorystorage"
 	"github.com/GaryShem/ya-metrics.git/internal/server/storage/repository"
@@ -34,7 +34,7 @@ func (s *AgentSuite) SetupSuite() {
 	middlewares = append(middlewares, middleware.RequestGzipper)
 	middlewares = append(middlewares, middleware.RequestLogger)
 	s.repo = memorystorage.NewMemStorage()
-	router, err := handlers.MetricsRouter(s.repo, false, middlewares...)
+	router, err := http2.MetricsRouter(s.repo, false, middlewares...)
 	if err != nil {
 		panic(err)
 	}
