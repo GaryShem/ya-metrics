@@ -31,7 +31,7 @@ func RunServer(sf *config.ServerFlags) error {
 		serverStopCtx()
 	}()
 
-	group.Go(func() error { return initHttpServer(ctx, sf, repo) })
+	group.Go(func() error { return initHTTPServer(ctx, sf, repo) })
 	group.Go(func() error { return initGRPCServer(ctx, sf, repo) })
 
 	return group.Wait()

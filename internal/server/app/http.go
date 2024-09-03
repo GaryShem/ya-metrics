@@ -37,7 +37,7 @@ func initMiddlewares(sf *config.ServerFlags) ([]func(http.Handler) http.Handler,
 	return middlewares, nil
 }
 
-func initHttpServer(ctx context.Context, sf *config.ServerFlags, repo repository.Repository) error {
+func initHTTPServer(ctx context.Context, sf *config.ServerFlags, repo repository.Repository) error {
 	middlewares, err := initMiddlewares(sf)
 	if err != nil {
 		return err
