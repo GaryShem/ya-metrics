@@ -1,11 +1,10 @@
-package grpc
+package models
 
 import (
 	"github.com/GaryShem/ya-metrics.git/internal/shared/proto"
-	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
 )
 
-func mapMetricInternalToProto(metric *models.Metrics) *proto.Metric {
+func MapMetricInternalToProto(metric *Metrics) *proto.Metric {
 	var g float64
 	var c int64
 	if metric.Value != nil {
@@ -22,8 +21,8 @@ func mapMetricInternalToProto(metric *models.Metrics) *proto.Metric {
 	}
 }
 
-func mapMetricProtoToInternal(metric *proto.Metric) *models.Metrics {
-	return &models.Metrics{
+func MapMetricProtoToInternal(metric *proto.Metric) *Metrics {
+	return &Metrics{
 		ID:    metric.Name,
 		MType: metric.Type,
 		Delta: &metric.Delta,

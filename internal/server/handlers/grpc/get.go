@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/GaryShem/ya-metrics.git/internal/shared/proto"
+	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
 )
 
 func (s *MetricsServerRepo) GetGauge(_ context.Context, request *proto.NameMessage) (*proto.GetGaugeResponse, error) {
@@ -28,9 +29,9 @@ func (s *MetricsServerRepo) GetCounter(_ context.Context, request *proto.NameMes
 }
 
 func (s *MetricsServerRepo) GetMetric(_ context.Context, request *proto.MetricMessage) (*proto.MetricMessage, error) {
-	metric := mapMetricProtoToInternal(request.Metric)
+	metric := models.MapMetricProtoToInternal(request.Metric)
 	if err := s.repo.GetMetric(metric); err != nil {
 		return nil, err
 	}
-	return &proto.MetricMessage{Metric: mapMetricInternalToProto(metric)}, nil
+	return &proto.MetricMessage{Metric: models.MapMetricInternalToProto(metric)}, nil
 }

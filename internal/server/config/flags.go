@@ -34,7 +34,7 @@ func withCmdLine() Option {
 		flag.StringVar(&serverFlags.CryptoKey, "crypto-key", "", "crypto key")
 		flag.StringVar(&serverFlags.Config, "c", "", "json config file")
 		flag.StringVar(&serverFlags.TrustedSubnet, "t", "", "trusted subnet")
-		flag.StringVar(&serverFlags.GRPCAddress, "g", "", "gRPC address")
+		flag.StringVar(&serverFlags.GRPCAddress, "g", "localhost:8081", "gRPC address")
 		flag.Parse()
 		return nil
 	}

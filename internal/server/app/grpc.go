@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 	"log"
+	"net"
 	"time"
 
 	grpc2 "google.golang.org/grpc"
 
 	"github.com/GaryShem/ya-metrics.git/internal/server/config"
 	"github.com/GaryShem/ya-metrics.git/internal/server/handlers/grpc"
-	"github.com/GaryShem/ya-metrics.git/internal/server/middleware"
+	interceptors2 "github.com/GaryShem/ya-metrics.git/internal/server/interceptors"
 	"github.com/GaryShem/ya-metrics.git/internal/server/storage/repository"
 	"github.com/GaryShem/ya-metrics.git/internal/shared/proto"
 )
@@ -20,12 +21,17 @@ func initGRPCServer(ctx context.Context, sf *config.ServerFlags, repo repository
 		return nil
 	}
 	interceptors := make([]grpc2.UnaryServerInterceptor, 0)
+	interceptors = append(interceptors, (&interceptors2.ErrorLoggingInterceptor{}).Intercept)
 	if sf.TrustedSubnet != "" {
-		interceptor, err := middleware.NewNetworkFilterMiddleware(sf.TrustedSubnet)
+		interceptor, err := interceptors2.NewNetworkFilterInterceptor(sf.TrustedSubnet)
 		if err != nil {
 			return err
 		}
 		interceptors = append(interceptors, interceptor.Intercept)
+	}
+	listener, err := net.Listen("tcp", sf.GRPCAddress)
+	if err != nil {
+		return err
 	}
 	metrics := grpc.NewMetricsServerRepo(repo)
 	server := grpc2.NewServer(grpc2.ChainUnaryInterceptor(interceptors...))
@@ -45,6 +51,8 @@ func initGRPCServer(ctx context.Context, sf *config.ServerFlags, repo repository
 		shutdownStopCtx()
 	}()
 	log.Printf("GRPC Server listening on %v\n", sf.GRPCAddress)
-
+	if err = server.Serve(listener); err != nil {
+		return err
+	}
 	return nil
 }

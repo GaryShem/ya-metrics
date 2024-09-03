@@ -24,19 +24,19 @@ func (s *MetricsServerRepo) UpdateCounter(_ context.Context, request *proto.Upda
 }
 
 func (s *MetricsServerRepo) UpdateMetric(_ context.Context, request *proto.MetricMessage) (*proto.MetricMessage, error) {
-	metric := mapMetricProtoToInternal(request.Metric)
+	metric := models.MapMetricProtoToInternal(request.Metric)
 	if err := s.repo.UpdateMetric(metric); err != nil {
 		return nil, err
 	}
 	return &proto.MetricMessage{
-		Metric: mapMetricInternalToProto(metric),
+		Metric: models.MapMetricInternalToProto(metric),
 	}, nil
 }
 
 func (s *MetricsServerRepo) UpdateBatch(_ context.Context, request *proto.MetricListMessage) (*proto.MetricListMessage, error) {
 	metrics := make([]models.Metrics, 0, len(request.Metrics))
 	for _, m := range request.Metrics {
-		metrics = append(metrics, *mapMetricProtoToInternal(m))
+		metrics = append(metrics, *models.MapMetricProtoToInternal(m))
 	}
 	metrics, err := s.repo.UpdateMetricBatch(metrics)
 	if err != nil {
@@ -44,7 +44,7 @@ func (s *MetricsServerRepo) UpdateBatch(_ context.Context, request *proto.Metric
 	}
 	result := make([]*proto.Metric, 0, len(metrics))
 	for _, m := range metrics {
-		result = append(result, mapMetricInternalToProto(&m))
+		result = append(result, models.MapMetricInternalToProto(&m))
 	}
 	return &proto.MetricListMessage{Metrics: result}, nil
 }
