@@ -1,7 +1,7 @@
-package proto
+package grpc
 
 import (
-	"github.com/GaryShem/ya-metrics.git/internal/server/handlers/grpc/proto"
+	"github.com/GaryShem/ya-metrics.git/internal/shared/proto"
 	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
 )
 

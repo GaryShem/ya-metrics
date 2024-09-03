@@ -1,8 +1,14 @@
 package middleware
 
 import (
+	"context"
 	"net"
 	"net/http"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 // NetworkFilterMiddleware - middleware to ascertain whether the request is coming from a trusted network
@@ -28,4 +34,17 @@ func (m *NetworkFilterMiddleware) Validate(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+func (m *NetworkFilterMiddleware) Intercept(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	if md, ok := metadata.FromIncomingContext(ctx); ok {
+		ips := md.Get("x-real-ip")
+		if len(ips) == 0 {
+			return nil, status.Errorf(codes.Unauthenticated, "missing x-real-ip header")
+		}
+		ip := net.ParseIP(ips[0])
+		if ip == nil || !m.acceptedNet.Contains(ip) {
+			return nil, status.Errorf(codes.Unauthenticated, "x-real-ip header value not valid")
+		}
+	}
+	return handler(ctx, req)
 }

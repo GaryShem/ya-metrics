@@ -1,29 +1,29 @@
-package proto
+package grpc
 
 import (
 	"context"
 
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	"github.com/GaryShem/ya-metrics.git/internal/server/handlers/grpc/proto"
+	"github.com/GaryShem/ya-metrics.git/internal/shared/proto"
 	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
 )
 
-func (s *MetricsServer) UpdateGauge(_ context.Context, request *proto.UpdateGaugeRequest) (*emptypb.Empty, error) {
+func (s *MetricsServerRepo) UpdateGauge(_ context.Context, request *proto.UpdateGaugeRequest) (*emptypb.Empty, error) {
 	if err := s.repo.UpdateGauge(request.Name, request.Value); err != nil {
 		return nil, err
 	}
 	return &emptypb.Empty{}, nil
 }
 
-func (s *MetricsServer) UpdateCounter(_ context.Context, request *proto.UpdateCounterRequest) (*emptypb.Empty, error) {
+func (s *MetricsServerRepo) UpdateCounter(_ context.Context, request *proto.UpdateCounterRequest) (*emptypb.Empty, error) {
 	if err := s.repo.UpdateCounter(request.Name, request.Delta); err != nil {
 		return nil, err
 	}
 	return &emptypb.Empty{}, nil
 }
 
-func (s *MetricsServer) UpdateMetric(_ context.Context, request *proto.MetricMessage) (*proto.MetricMessage, error) {
+func (s *MetricsServerRepo) UpdateMetric(_ context.Context, request *proto.MetricMessage) (*proto.MetricMessage, error) {
 	metric := mapMetricProtoToInternal(request.Metric)
 	if err := s.repo.UpdateMetric(metric); err != nil {
 		return nil, err
@@ -33,7 +33,7 @@ func (s *MetricsServer) UpdateMetric(_ context.Context, request *proto.MetricMes
 	}, nil
 }
 
-func (s *MetricsServer) UpdateBatch(_ context.Context, request *proto.MetricListMessage) (*proto.MetricListMessage, error) {
+func (s *MetricsServerRepo) UpdateBatch(_ context.Context, request *proto.MetricListMessage) (*proto.MetricListMessage, error) {
 	metrics := make([]models.Metrics, 0, len(request.Metrics))
 	for _, m := range request.Metrics {
 		metrics = append(metrics, *mapMetricProtoToInternal(m))

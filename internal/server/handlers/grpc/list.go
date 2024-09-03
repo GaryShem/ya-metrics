@@ -1,14 +1,14 @@
-package proto
+package grpc
 
 import (
 	"context"
 
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	"github.com/GaryShem/ya-metrics.git/internal/server/handlers/grpc/proto"
+	"github.com/GaryShem/ya-metrics.git/internal/shared/proto"
 )
 
-func (s *MetricsServer) ListMetrics(_ context.Context, _ *emptypb.Empty) (*proto.MetricListMessage, error) {
+func (s *MetricsServerRepo) ListMetrics(_ context.Context, _ *emptypb.Empty) (*proto.MetricListMessage, error) {
 	metrics, err := s.repo.ListMetrics()
 	if err != nil {
 		return nil, err
