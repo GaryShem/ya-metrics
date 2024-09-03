@@ -1,4 +1,4 @@
-package handlers
+package http
 
 import (
 	"github.com/GaryShem/ya-metrics.git/internal/server/storage/repository"

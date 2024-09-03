@@ -13,11 +13,15 @@ import (
 	"time"
 
 	"github.com/go-resty/resty/v2"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
 
 	"github.com/GaryShem/ya-metrics.git/internal/agent/config"
 	"github.com/GaryShem/ya-metrics.git/internal/agent/encryption"
 	"github.com/GaryShem/ya-metrics.git/internal/agent/metrics"
 	"github.com/GaryShem/ya-metrics.git/internal/shared/logging"
+	"github.com/GaryShem/ya-metrics.git/internal/shared/proto"
 	"github.com/GaryShem/ya-metrics.git/internal/shared/storage/models"
 )
 
@@ -78,7 +82,11 @@ func SendMetrics(ctx context.Context, mc *metrics.MetricCollector, agentFlags co
 				ec <- fmt.Errorf("error dumping metrics: %w", err)
 				return
 			}
-			go sendMetricsBatch(metricsDump, agentFlags, sendErrChan, semaphore)
+			if agentFlags.GRPCAddress != "" {
+				go sendMetricsGRPC(ctx, metricsDump, agentFlags, sendErrChan, semaphore)
+			} else {
+				go sendMetricsBatch(metricsDump, agentFlags, sendErrChan, semaphore)
+			}
 			if sendOnce {
 				semaphore <- struct{}{}
 				ec <- nil
@@ -114,6 +122,28 @@ func wrapGzipBody(mJSON []byte) ([]byte, error) {
 	return bodyBytes, nil
 }
 
+func sendMetricsGRPC(ctx context.Context, metrics []*models.Metrics, agentFlags config.AgentFlags, ec chan error, semaphore chan struct{}) {
+	logging.Log.Infoln("Sending metric batch via gRPC")
+	defer func() { <-semaphore }()
+	conn, err := grpc.NewClient(agentFlags.GRPCAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		ec <- fmt.Errorf("error creating gRPC client: %v", err)
+		return
+	}
+	defer func() { _ = conn.Close() }()
+	client := proto.NewMetricsClient(conn)
+	metricsProto := make([]*proto.Metric, len(metrics))
+	for i, m := range metrics {
+		metricsProto[i] = models.MapMetricInternalToProto(m)
+	}
+	md := metadata.New(map[string]string{"x-real-ip": GetLocalIP()})
+	ctx = metadata.NewOutgoingContext(ctx, md)
+	_, err = client.UpdateBatch(ctx, &proto.MetricListMessage{Metrics: metricsProto})
+	if err != nil {
+		ec <- fmt.Errorf("error updating metrics: %w", err)
+	}
+}
+
 func sendMetricsBatch(metrics []*models.Metrics, agentFlags config.AgentFlags, ec chan error, semaphore chan struct{}) {
 	logging.Log.Infoln("Sending metric batch")
 	defer func() { <-semaphore }()
@@ -127,6 +157,7 @@ func sendMetricsBatch(metrics []*models.Metrics, agentFlags config.AgentFlags, e
 	}
 	request := client.R().SetPathParam("host", agentFlags.Address).
 		SetHeader("Content-Type", "application/json")
+	request.SetHeader("X-Real-IP", GetLocalIP())
 	var body []byte
 	if agentFlags.GzipRequest {
 		body, err = wrapGzipBody(mJSON)

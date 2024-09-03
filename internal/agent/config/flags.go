@@ -20,6 +20,7 @@ type AgentFlags struct {
 	GzipRequest        bool          `env:"GZIP_REQUEST" json:"gzip_request"`
 	CryptoKey          string        `env:"CRYPTO_KEY" json:"crypto_key"`
 	Config             string        `json:"config"`
+	GRPCAddress        string        `env:"GRPC_ADDRESS" json:"grpc_address"`
 }
 
 func withCmdLine() Option {
@@ -32,6 +33,7 @@ func withCmdLine() Option {
 		flag.BoolVar(&agentFlags.GzipRequest, "z", true, "gzip request")
 		flag.StringVar(&agentFlags.CryptoKey, "crypto-key", "", "crypto key")
 		flag.StringVar(&agentFlags.Config, "c", "", "json config file")
+		flag.StringVar(&agentFlags.GRPCAddress, "g", "", "gRPC address")
 		flag.Parse()
 		return nil
 	}
@@ -60,6 +62,9 @@ func withEnv() Option {
 		}
 		if ec.CryptoKey != "" {
 			agentFlags.CryptoKey = ec.CryptoKey
+		}
+		if ec.GRPCAddress != "" {
+			agentFlags.GRPCAddress = ec.GRPCAddress
 		}
 		return nil
 	}
@@ -98,6 +103,9 @@ func withJSONConfig() Option {
 		}
 		if agentFlags.CryptoKey == "" {
 			agentFlags.CryptoKey = jsonFlags.CryptoKey
+		}
+		if agentFlags.GRPCAddress == "" {
+			agentFlags.GRPCAddress = jsonFlags.GRPCAddress
 		}
 		return nil
 	}

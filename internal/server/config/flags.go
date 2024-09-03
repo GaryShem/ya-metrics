@@ -19,6 +19,8 @@ type ServerFlags struct {
 	HashKey           string        `env:"KEY" json:"hash_key"`
 	CryptoKey         string        `env:"CRYPTO_KEY" json:"crypto_key"`
 	Config            string        `env:"CONFIG"`
+	TrustedSubnet     string        `env:"TRUSTED_SUBNET" json:"trusted_subnet"`
+	GRPCAddress       string        `env:"GRPC_ADDRESS" json:"grpc_address"`
 }
 
 func withCmdLine() Option {
@@ -31,6 +33,8 @@ func withCmdLine() Option {
 		flag.StringVar(&serverFlags.HashKey, "k", "", "SHA hash key")
 		flag.StringVar(&serverFlags.CryptoKey, "crypto-key", "", "crypto key")
 		flag.StringVar(&serverFlags.Config, "c", "", "json config file")
+		flag.StringVar(&serverFlags.TrustedSubnet, "t", "", "trusted subnet")
+		flag.StringVar(&serverFlags.GRPCAddress, "g", "localhost:8081", "gRPC address")
 		flag.Parse()
 		return nil
 	}
@@ -62,6 +66,12 @@ func withEnv() Option {
 		}
 		if ec.CryptoKey != "" {
 			serverFlags.CryptoKey = ec.CryptoKey
+		}
+		if ec.TrustedSubnet != "" {
+			serverFlags.TrustedSubnet = ec.TrustedSubnet
+		}
+		if ec.GRPCAddress != "" {
+			serverFlags.GRPCAddress = ec.GRPCAddress
 		}
 		return nil
 	}
@@ -100,6 +110,12 @@ func withJSONConfig() Option {
 		}
 		if serverFlags.CryptoKey == "" {
 			serverFlags.CryptoKey = jsonFlags.CryptoKey
+		}
+		if serverFlags.TrustedSubnet == "" {
+			serverFlags.TrustedSubnet = jsonFlags.TrustedSubnet
+		}
+		if serverFlags.GRPCAddress == "" {
+			serverFlags.GRPCAddress = jsonFlags.GRPCAddress
 		}
 		return nil
 	}
